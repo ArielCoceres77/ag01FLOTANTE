@@ -9,7 +9,8 @@ const KB = window.AG1_KB || [];
 document.documentElement.classList.add(PLAT);
 const isla = $("#isla");
 AG1_MASCOTA.montar();
-if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "lib/pdf.worker.min.js";
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = window.AG1_PDF_WORKER || "lib/pdf.worker.min.js";
+let sample = null; // cerebro de Claude dentro de claude.ai (vista previa)
 
 /* ---------- estado guardado ---------- */
 const KEY = "ag1.flotante.v1";
@@ -289,7 +290,7 @@ const bloqueImagen = c => ({ type: "image", source: { type: "base64", media_type
 const textoVentanas = c => c.ventanas?.length ? "Ventanas abiertas: " + c.ventanas.join(" | ") : (c.app ? "App en primer plano: " + c.app : "");
 
 /* ---------- cerebro con Claude ---------- */
-function pintarCerebro(){ $("#brain").innerHTML = "Cerebro: <b>" + (claves.claude ? "Claude" : "local") + "</b>"; }
+function pintarCerebro(){ $("#brain").innerHTML = "Cerebro: <b>" + (claves.claude || sample ? "Claude" : "local") + "</b>"; }
 const TOOLS = [
   { name: "buscar_conocimiento", description: "Busca en la base de conocimiento de AG1 (clases de Ética e IA, instructivos 01 a 42, DIA, obra literaria, El Colorado, Villafañe y Formosa, enlaces). Devuelve los fragmentos más relevantes. Usala antes de decir que algo no está.", input_schema: { type: "object", properties: { consulta: { type: "string" } }, required: ["consulta"] } },
   { name: "crear_tarea", description: "Suma una tarea pendiente. La app pide permiso.", input_schema: { type: "object", properties: { texto: { type: "string" } }, required: ["texto"] } },
@@ -352,6 +353,32 @@ async function conClaude(texto, adj, cap){
   return salida;
 }
 
+/* vista previa en claude.ai: Claude sin clave, con las mismas herramientas (salvo mirar la pantalla) */
+async function conSample(texto, adj){
+  const sys = sistema(texto + " " + S.chat.slice(-3).map(c => c.t).join(" ")).map(b => b.text).join("\n\n");
+  let t = texto || "Mirá esto.";
+  adj.filter(a => !a.img).forEach(a => { t += `\n\n<archivo nombre="${a.nombre}">\n${a.texto ? a.texto.slice(0, 30000) : "(no pude leer este archivo)"}\n</archivo>`; });
+  if (adj.some(a => a.img)) t += "\n\n(La persona adjuntó imágenes que en esta vista previa no puedo ver.)";
+  const turnos = [{ role: "user", content: sys + "\n\nEsta es una vista previa en el navegador: acá no podés mirar la pantalla ni flotar sobre otras apps; eso lo hace la app instalada." }];
+  const hist = S.chat.slice(-11, -1).filter(c => c.t).map(c => ({ role: c.r === "yo" ? "user" : "assistant", content: c.t }));
+  hist.forEach(m => turnos.push(m));
+  turnos.push({ role: "user", content: t });
+  const tools = TOOLS.filter(x => x.name !== "ver_pantalla").map(x => ({ name: x.name, description: x.description, inputSchema: x.input_schema, execute: async inp => { if (x.name === "buscar_conocimiento") estado("ocupado", "Buscando en tu material", String(inp?.consulta || "")); return await acciones[x.name](inp || {}); } }));
+  const el = burbuja("ag", "…");
+  estado("ocupado", "Pensando", "Pensando…");
+  try {
+    const opts = { modelTier: S.rapido ? "quick" : "default", onText: ({ text }) => { el.lastChild.textContent = text; scrollChat(); } };
+    const lim = await sample.limits().catch(() => null);
+    if (lim?.tools) opts.tools = tools; else opts.cache = false;
+    const { text } = await sample(turnos, opts);
+    el.lastChild.textContent = text.trim(); guardarResp(text.trim()); return text.trim();
+  } catch (e) {
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled"].includes(e?.code)) { sample = null; pintarCerebro(); el.remove(); return null; }
+    const m = (e?.text ? e.text + "\n" : "") + (e?.code === "rate_limited" ? "Estoy saturado, probá en un ratito." : "Se cortó la conexión, probá de nuevo.");
+    el.lastChild.textContent = m; guardarResp(m); return m;
+  }
+}
+
 async function enviar(){
   if (trabajando) return;
   callar();
@@ -364,6 +391,7 @@ async function enviar(){
     let cap = null;
     if (usarPantalla) { try { cap = await captura(1400); } catch (e) { agregarMsg("ag", "No pude mirar la pantalla: " + e.message); } }
     if (claves.claude) resp = await conClaude(texto, adj, cap);
+    else if (sample) resp = await conSample(texto, adj);
     if (resp === null) resp = await local(texto, adj, cap);
   } catch (e) { agregarMsg("ag", "Uy, algo falló: " + e.message); }
   trabajando = false;
@@ -467,6 +495,7 @@ $("#borrarChat").onclick = () => { S.chat = []; S.consejos = []; save(); pintarC
 /* ---------- arranque ---------- */
 (async () => {
   try { claves = Object.assign(claves, await api.claveEstado()); } catch {}
+  if (PLAT === "web" && window.claude?.use) { window.claude.use("sample").then(sm => { sample = sm; pintarCerebro(); }).catch(() => {}); }
   pintarCerebro(); pintar(); pintarChat(); ir("inicio"); api.posicion(S.pos);
   S.recs.forEach(programar);
   const venc = S.recs.filter(r => !r.sonado && r.cuando <= Date.now());

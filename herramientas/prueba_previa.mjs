@@ -1,0 +1,14 @@
+import { chromium } from "playwright";
+const out = process.argv[2];
+const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium", args: ["--headless=new"] });
+const p = await b.newPage({ viewport: { width: 390, height: 780 }, deviceScaleFactor: 2 });
+p.on("pageerror", e => console.log("ERR", e.message));
+const html = (await import("fs")).readFileSync(new URL("../vista-previa/index.html", import.meta.url), "utf8");
+await p.setContent('<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>' + html + '</body></html>');
+await p.waitForTimeout(800);
+await p.screenshot({ path: out + "/v1.png" });
+await p.click("#pill"); await p.waitForTimeout(300);
+await p.click(".ib[data-vista=chat]");
+await p.fill("#txt", "¿Qué dice el instructivo 41?"); await p.click("#send"); await p.waitForTimeout(900);
+await p.screenshot({ path: out + "/v2.png" });
+await b.close();

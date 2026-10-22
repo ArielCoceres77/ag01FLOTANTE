@@ -1,0 +1,1397 @@
+<title>AG1 vista previa</title>
+<meta name="theme-color" content="#0B1612">
+<style>
+/* Isla oscura con la mascota de IA El Colorado: verde IA, sol dorado, crema. */
+:root{
+  --isla:#0B1612; --isla2:#15241E; --isla3:#20332B; --fg:#F3F1E7; --muted:#9DB0A6;
+  --verde:#2FA84F; --verde2:#1B4D3E; --oro:#F2B33D; --oro2:#E08E12; --crema:#F4F1E8;
+  --ok:#3CCB7F; --warn:#F4B23E; --bad:#F0566A; --info:#6FA8FF; --ojo:#C56BFF;
+  --f:"Nunito","Segoe UI Variable Text","Segoe UI",Roboto,ui-rounded,-apple-system,system-ui,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"Roboto Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;background:transparent;overflow:hidden;font-family:var(--f);font-size:14px;color:var(--fg);user-select:none}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--oro);outline-offset:2px;border-radius:8px}
+#raiz{position:absolute;top:12px;left:12px}
+.android #raiz{top:6px;left:6px;right:6px}
+
+.isla{background:var(--isla);border-radius:28px;width:300px;position:relative;overflow:hidden;
+  box-shadow:0 8px 22px -6px rgba(0,0,0,.6),0 0 0 1px rgba(242,179,61,.18) inset}
+.isla.open{width:600px;border-radius:28px}
+.isla.notify{width:430px}
+.android .isla.open,.android .isla.notify{width:100%}
+.pill{display:flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;width:100%;background:none;border:0;text-align:left;height:56px}
+.pill-text{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.pill-title{font-weight:900;font-size:13.5px;display:flex;align-items:center;gap:6px;letter-spacing:.02em}
+.pill-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none;box-shadow:0 0 0 3px rgba(60,203,127,.18)}
+.dot.busy{background:var(--info);animation:pulse 1s infinite}
+.dot.wait{background:var(--warn);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.ojito{display:none;font-size:11px;font-weight:800;color:var(--ojo);background:rgba(197,107,255,.14);border-radius:99px;padding:1px 7px;white-space:nowrap}
+.observando .ojito{display:inline-block}
+.isla.open .pill,.isla.notify .pill{display:none}
+
+/* --- Mascota AG1 (SVG) --- */
+.mascota{width:44px;height:44px;flex:none;position:relative}
+.mascota svg{width:100%;height:100%;overflow:visible;display:block}
+.mascota.big{width:92px;height:100px}
+.mascota .rayos{transform-box:fill-box;transform-origin:center;animation:girar 40s linear infinite}
+@keyframes girar{to{transform:rotate(360deg)}}
+.mascota .ojos{transform:translate(var(--ex,0px),var(--ey,0px));transition:transform .12s}
+.mascota .ojo{transform-box:fill-box;transform-origin:center;transition:transform .1s}
+.mascota .feliz{display:none}
+.mascota.blink .ojo{transform:scaleY(.1)}
+.mascota.happy .ojo{display:none}.mascota.happy .feliz{display:inline}
+.mascota.think .rayos{animation-duration:3s}
+.mascota.think .ojos{transform:translate(0,-2.5px)}
+.mascota.alert{animation:salto .5s}
+.mascota.alert .ojo{transform:scale(1.18)}
+.mascota.mira .iris{fill:var(--ojo)}
+.mascota.mira .ojos{animation:escanear 2.2s infinite}
+.mascota.sleep .ojo{transform:scaleY(.1)}
+.mascota.sleep .rayos{animation-play-state:paused}
+.mascota.habla .boca{animation:hablar .25s infinite alternate}
+@keyframes hablar{to{transform:scaleY(1.9)}}
+.mascota .boca{transform-box:fill-box;transform-origin:top center}
+@keyframes escanear{0%,100%{transform:translate(-2.5px,0)}50%{transform:translate(2.5px,0)}}
+@keyframes salto{30%{transform:translateY(-5px) rotate(-5deg)}60%{transform:none}}
+.badge{position:absolute;top:-3px;right:-3px;width:16px;height:16px;border-radius:50%;background:var(--warn);color:#000;font-size:11px;font-weight:900;display:none;place-items:center;line-height:1}
+.mascota.alert .badge{display:grid}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+.panel{display:none;padding:10px 12px 12px}
+.isla.open .panel{display:block}
+.bar{display:flex;align-items:center;gap:2px;padding:0 0 10px}
+.ib{background:none;border:0;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:var(--muted);flex:none}
+.ib:hover{background:var(--isla2);color:var(--fg)}
+.ib.on{background:var(--isla3);color:var(--fg)}
+.ib.ver.activo,.ib.mic.activo{color:var(--ojo);background:rgba(197,107,255,.14)}
+.ib svg{width:19px;height:19px}
+.grow{flex:1}
+.brain{font-size:11px;font-weight:800;color:var(--muted);padding:4px 9px;border-radius:99px;background:var(--isla2);white-space:nowrap}
+.brain b{color:var(--oro)}
+
+.inicio{display:grid;grid-template-columns:1.2fr 1fr;gap:10px}
+.android .inicio{grid-template-columns:1fr}
+.estado{background:linear-gradient(135deg,var(--isla2),#1b2d22);border-radius:20px;padding:10px 12px;display:flex;gap:12px;align-items:center;min-width:0}
+.estado .txt{min-width:0}
+.t1{font-weight:900;font-size:13.5px;display:flex;gap:6px;align-items:center}
+.t2{font-size:12.5px;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
+.sombreros{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.sombreros span{font-size:10.5px;font-weight:800;background:rgba(47,168,79,.16);color:#9fe0b3;border-radius:99px;padding:1px 7px}
+.widgets{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.w{background:var(--isla2);border:0;border-radius:16px;padding:9px 10px;display:flex;align-items:center;gap:8px;text-align:left;min-width:0}
+.w:hover{background:var(--isla3)}
+.w i{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;flex:none;font-style:normal;font-size:12px;font-weight:900;color:#0B1612}
+.w span{font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.w small{display:block;color:var(--muted);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.chat{display:flex;flex-direction:column;gap:8px}
+.msgs{height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px;user-select:text}
+.android .msgs{height:42vh}
+.m{max-width:88%;padding:8px 12px;border-radius:16px;font-size:14px;white-space:pre-wrap;word-wrap:break-word;line-height:1.45}
+.m.yo{align-self:flex-end;background:var(--oro);color:#241600;border-bottom-right-radius:6px;font-weight:700}
+.m.ag{align-self:flex-start;background:var(--isla2);border-bottom-left-radius:6px}
+.m.obs{align-self:flex-start;background:rgba(197,107,255,.12);border:1px solid rgba(197,107,255,.3)}
+.m .adj{display:inline-block;font-size:11.5px;background:rgba(0,0,0,.18);border-radius:8px;padding:1px 7px;margin:0 4px 4px 0}
+.m .fuente{display:block;margin-top:6px;font-size:11px;color:var(--muted)}
+.adjuntos{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:6px;font-size:12px;background:var(--isla2);border-radius:10px;padding:4px 6px 4px 9px}
+.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.chip button{background:none;border:0;color:var(--muted);padding:0 2px;font-size:14px;line-height:1}
+.entrada{display:flex;gap:2px;align-items:flex-end;background:#13211B;border-radius:20px;padding:5px;box-shadow:0 0 0 1px rgba(255,255,255,.05) inset}
+.entrada textarea{flex:1;min-width:0;background:none;border:0;resize:none;padding:8px 6px;max-height:110px;outline:none;font-size:15px;user-select:text}
+.entrada textarea::placeholder{color:var(--muted)}
+.send{width:38px;height:38px;border-radius:50%;border:0;background:var(--oro);color:#241600;display:grid;place-items:center;flex:none}
+.send svg{width:18px;height:18px}
+.sugeridas{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.sugeridas::-webkit-scrollbar{display:none}
+.sugeridas button{flex:none;border:1px solid var(--isla3);background:none;color:var(--muted);font-size:12px;font-weight:800;border-radius:99px;padding:5px 10px}
+.sugeridas button:hover{color:var(--fg);border-color:var(--verde)}
+
+.permiso{background:var(--isla2);border-radius:20px;padding:12px;display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+.permiso .txt{flex:1;min-width:0}
+.permiso em{font-style:normal;color:var(--warn);font-weight:800;font-size:12px}
+.permiso code{display:block;font-family:var(--mono);font-size:12px;background:#07100C;border-radius:10px;padding:7px 9px;margin:6px 0 10px;color:#DDE5DF;white-space:pre-wrap;word-break:break-word}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.btn{border:0;border-radius:99px;padding:7px 14px;font-weight:900;font-size:13px;background:var(--isla3)}
+.btn.si{background:var(--oro);color:#241600}
+.btn:hover{filter:brightness(1.15)}
+
+.aviso{display:none;align-items:center;gap:10px;padding:6px 14px 6px 6px;min-height:56px;cursor:pointer}
+.isla.notify .aviso{display:flex}
+.aviso .txt{min-width:0;flex:1}
+.aviso .t2{-webkit-line-clamp:2}
+
+.drop{position:absolute;inset:6px;border:2px dashed var(--oro);border-radius:22px;background:rgba(11,22,18,.95);display:none;align-items:center;justify-content:center;gap:14px;z-index:5}
+.isla.dragging .drop{display:flex}
+.tags{display:flex;gap:5px;margin-top:4px}
+.tags span{font-size:11px;background:var(--isla3);border-radius:6px;padding:1px 7px;color:var(--muted)}
+
+.tablero{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.android .tablero{grid-template-columns:1fr}
+.col{background:var(--isla2);border-radius:16px;padding:10px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.col h3{margin:0;font-size:13px;font-weight:900;display:flex;justify-content:space-between}
+.col h3 small{color:var(--muted);font-weight:700}
+.items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto}
+.item{display:flex;gap:6px;align-items:flex-start;font-size:12.5px;background:var(--isla3);border-radius:9px;padding:6px 7px;min-width:0}
+.item .c{flex:1;min-width:0;word-wrap:break-word}
+.item .meta{display:block;font-size:11px;color:var(--muted)}
+.item.hecha .c>span{text-decoration:line-through;color:var(--muted)}
+.item input{accent-color:var(--verde);margin:2px 0 0}
+.item .x{background:none;border:0;color:var(--muted);padding:0 2px;line-height:1}
+.vacio{color:var(--muted);font-size:12px}
+.cuenta{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--oro)}
+.add{display:flex;gap:4px}
+.add input{flex:1;min-width:0;background:var(--isla3);border:0;border-radius:8px;padding:6px 8px;font-size:12.5px;outline:none;user-select:text}
+
+.ajustes{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:420px;overflow-y:auto}
+.android .ajustes{grid-template-columns:1fr;max-height:60vh}
+.fila{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--isla2);border-radius:14px;padding:9px 12px;font-size:13px;min-width:0;flex-wrap:wrap}
+.fila.ancha{grid-column:1/-1}
+.fila label{font-weight:800}
+.fila small{display:block;color:var(--muted);font-size:11.5px;font-weight:600}
+.fila input[type=text],.fila input[type=password],.fila select{background:var(--isla3);border:0;border-radius:9px;padding:7px 9px;color:var(--fg);outline:none;user-select:text;min-width:0}
+.fila input[type=password]{width:230px;max-width:100%}
+.sw{appearance:none;-webkit-appearance:none;width:42px;height:24px;border-radius:99px;background:var(--isla3);position:relative;flex:none;cursor:pointer}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--fg);transition:left .15s}
+.sw:checked{background:var(--verde)}.sw:checked::after{left:21px}
+.lista-perm{display:flex;flex-wrap:wrap;gap:5px}
+.lista-perm span{font-size:11.5px;background:var(--isla3);border-radius:8px;padding:2px 8px}
+.ok{color:var(--ok);font-weight:900;font-size:12px}
+.solo-escritorio,.solo-android{display:none}
+.escritorio .solo-escritorio{display:flex}
+.android .solo-android{display:grid}
+.android .fila.solo-android{display:flex}
+
+/* ---- vista previa: fondo de celular y la isla flotando arriba ---- */
+html.web,html.web body{height:100%;overflow:hidden}
+html.web body{background:#0d1b16;background-image:radial-gradient(120% 70% at 20% 0%,#1f5a3a 0%,transparent 55%),radial-gradient(90% 60% at 100% 100%,#6b4a10 0%,transparent 60%),linear-gradient(160deg,#0f2a20,#0a1410);}
+html.web #raiz{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);z-index:5;max-width:calc(100vw - 16px)}
+html.web.android #raiz{left:8px;right:8px;transform:none;max-width:none}
+.fondo{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 max(16px,env(safe-area-inset-left,0px)) calc(env(safe-area-inset-bottom,0px) + 28px);pointer-events:none;text-align:center;gap:14px}
+.fondo .apps{display:grid;grid-template-columns:repeat(4,56px);gap:18px 22px;opacity:.55}
+.fondo .apps i{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.12);display:block}
+.fondo p{margin:0;color:#c9d6cf;font-size:12.5px;line-height:1.45;max-width:46ch;background:rgba(0,0,0,.35);padding:10px 14px;border-radius:14px}
+.fondo b{color:#F2B33D}
+
+html.android-layout .isla.open,html.android-layout .isla.notify{width:100%}
+html.android-layout .inicio,html.android-layout .tablero,html.android-layout .ajustes{grid-template-columns:1fr}
+html.android-layout .msgs{height:46vh}
+html.android-layout #raiz{left:8px;right:8px;transform:none;max-width:none}
+</style>
+<script>if (matchMedia("(max-width: 640px)").matches) document.documentElement.classList.add("android-layout");</script>
+<div class="fondo" aria-hidden="true"><div class="apps"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<p><b>Vista previa de AG1.</b> Así flota arriba de tu pantalla. Tocá la isla para charlar. En la app instalada, además, se queda encima de todas las apps y puede mirar tu pantalla.</p></div>
+
+<div id="raiz">
+<div class="isla" id="isla">
+  <button class="pill" id="pill" aria-label="Abrir AG1">
+    <div class="mascota" data-m="cara"></div>
+    <div class="pill-text">
+      <span class="pill-title"><span class="dot" data-dot></span><span>AG1</span><span class="ojito">👁 mirando</span></span>
+      <span class="pill-sub" id="pillSub">Tocame para charlar</span>
+    </div>
+  </button>
+
+  <div class="aviso" id="aviso">
+    <div class="mascota alert" data-m="cara"></div>
+    <div class="txt"><div class="t1" id="avisoT1"></div><div class="t2" id="avisoT2"></div></div>
+  </div>
+
+  <div class="panel">
+    <div class="bar">
+      <button class="ib" data-vista="inicio" title="Inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></button>
+      <button class="ib" data-vista="chat" title="Chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></button>
+      <button class="ib" data-vista="tablero" title="Tareas, recordatorios y notas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16M15 4v16"/></svg></button>
+      <button class="ib ver" id="btnMirar" title="Mirá mi pantalla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button class="ib" id="btnAdjuntar" title="Adjuntar archivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <span class="grow"></span>
+      <span class="brain" id="brain">Cerebro: <b>local</b></span>
+      <button class="ib" data-vista="ajustes" title="Ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>
+      <button class="ib" id="btnCerrar" title="Achicar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></button>
+    </div>
+
+    <div class="permiso" id="permiso" hidden>
+      <div class="mascota alert" data-m="cara"></div>
+      <div class="txt">
+        <div class="t1">AG1 <em>necesita permiso</em></div>
+        <code id="permAccion"></code>
+        <div class="btns"><button class="btn" id="permNo">Denegar</button><button class="btn si" id="permSi">Permitir</button><button class="btn" id="permSiempre">Siempre</button></div>
+      </div>
+    </div>
+
+    <div class="vista inicio" data-v="inicio">
+      <div class="estado">
+        <div class="mascota big" data-m="cuerpo"></div>
+        <div class="txt">
+          <div class="t1"><span class="dot" data-dot></span><span id="estT1">Acá andamos</span></div>
+          <div class="t2" id="estT2">¡Buenas, profe! Preparamos una clase, empujamos un proyecto o pensamos una ruta.</div>
+          <div class="sombreros"><span>📚 clases</span><span>🛠️ proyectos</span><span>🧭 viajes</span></div>
+        </div>
+      </div>
+      <div class="widgets">
+        <button class="w" data-ir="tablero"><i style="background:var(--verde)">✓</i><div style="min-width:0"><span>Tareas</span><small id="wTareas">0 pendientes</small></div></button>
+        <button class="w" data-ir="tablero"><i style="background:var(--oro)">⏰</i><div style="min-width:0"><span>Recordatorios</span><small id="wRec">ninguno</small></div></button>
+        <button class="w" id="wMirar"><i style="background:var(--ojo)">👁</i><div style="min-width:0"><span>Mi pantalla</span><small>mirar ahora</small></div></button>
+        <button class="w" id="wObs"><i style="background:var(--info)">◉</i><div style="min-width:0"><span>Observador</span><small id="wObsTxt">apagado</small></div></button>
+      </div>
+    </div>
+
+    <div class="vista chat" data-v="chat" hidden>
+      <div class="msgs" id="msgs"></div>
+      <div class="sugeridas" id="sugeridas"></div>
+      <div class="adjuntos" id="adjuntos"></div>
+      <div class="entrada">
+        <button class="ib" id="btnAdj2" title="Adjuntar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 11-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6L15 6.6"/></svg></button>
+        <button class="ib ver" id="btnConPantalla" title="Mandar con captura de pantalla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <textarea id="txt" rows="1" placeholder="Escribile a AG1…"></textarea>
+        <button class="ib mic" id="btnMic" title="Hablarle" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+        <button class="send" id="send" title="Enviar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+      </div>
+    </div>
+
+    <div class="vista tablero" data-v="tablero" hidden>
+      <div class="col"><h3>Tareas <small id="nT">0</small></h3><ul class="items" id="lTareas"></ul><form class="add" data-tipo="tarea"><input placeholder="Nueva tarea"></form></div>
+      <div class="col"><h3>Recordatorios <small id="nR">0</small></h3><ul class="items" id="lRec"></ul><div class="vacio" id="vRec">Pedí «recordame … en 10 min».</div></div>
+      <div class="col"><h3>Notas <small id="nN">0</small></h3><ul class="items" id="lNotas"></ul><form class="add" data-tipo="nota"><input placeholder="Nueva nota"></form></div>
+    </div>
+
+    <div class="vista ajustes" data-v="ajustes" hidden>
+      <div class="fila ancha"><div><label for="optClave">Clave de Claude (API)</label><small>Le da el cerebro de Claude y los ojos. Sin clave, AG1 responde con su conocimiento guardado. <span id="claveOk"></span></small></div><input type="password" id="optClave" placeholder="sk-ant-…" autocomplete="off"></div>
+      <div class="fila ancha"><div><label for="optClaveVoz">Clave de ElevenLabs (opcional)</label><small>Para que hable con la voz de tu agente AG1. Sin clave usa la voz del dispositivo. <span id="claveVozOk"></span></small></div><input type="password" id="optClaveVoz" placeholder="sk_…" autocomplete="off"></div>
+      <div class="fila"><div><label for="optHablar">Hablar las respuestas</label></div><input type="checkbox" class="sw" id="optHablar"></div>
+      <div class="fila"><div><label for="optPos">Lugar</label></div><select id="optPos"><option value="centro">Arriba al centro</option><option value="izquierda">Arriba a la izquierda</option><option value="derecha">Arriba a la derecha</option></select></div>
+      <div class="fila"><div><label for="optObs">Modo observador</label><small>Mira tu pantalla y avisa si puede ayudar</small></div><input type="checkbox" class="sw" id="optObs"></div>
+      <div class="fila"><div><label for="optCada">Mirar cada</label><small>Solo si la pantalla cambió</small></div><select id="optCada"><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option></select></div>
+      <div class="fila"><div><label for="optRapido">Modo rápido</label><small>Modelo más liviano</small></div><input type="checkbox" class="sw" id="optRapido"></div>
+      <div class="fila"><div><label for="optSonido">Sonidos</label></div><input type="checkbox" class="sw" id="optSonido"></div>
+      <div class="fila solo-escritorio"><div><label for="optInicio">Iniciar con la compu</label></div><input type="checkbox" class="sw" id="optInicio"></div>
+      <div class="fila"><div><label for="optModelo">Modelos</label><small>chat / rápido</small></div><div style="display:flex;gap:4px;min-width:0;flex-wrap:wrap"><input type="text" id="optModelo" style="width:140px"><input type="text" id="optModeloR" style="width:140px"></div></div>
+      <div class="fila ancha"><div><label>Permisos dados «Siempre»</label><div class="lista-perm" id="listaPerm"></div></div><button class="btn" id="borrarPerm">Volver a preguntar</button></div>
+      <div class="fila ancha"><div><label>Borrar la charla</label><small>Tareas y notas quedan</small></div><button class="btn" id="borrarChat">Borrar</button></div>
+    </div>
+  </div>
+
+  <div class="drop"><div class="mascota big happy" data-m="cuerpo"></div><div><div class="t1">Soltá tus archivos acá</div><div class="tags"><span>PDF</span><span>Imágenes</span><span>Texto</span><span>Código</span></div></div></div>
+</div>
+</div>
+<input type="file" id="file" multiple hidden>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>window.AG1_PDF_WORKER="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
+<script>
+// Una sola interfaz para la isla: escritorio (Electron), Android (puente nativo) o navegador.
+(() => {
+  // --- Escritorio: preload.js ya expuso window.ag1 ---
+  if (window.ag1) { window.AG1_PLATAFORMA = "escritorio"; return; }
+
+  // --- Android: el puente nativo AG1Android ---
+  if (window.AG1Android) {
+    window.AG1_PLATAFORMA = "android";
+    const pendientes = new Map(); let n = 0;
+    window.__ag1Resp = (id, json) => { const p = pendientes.get(id); if (!p) return; pendientes.delete(id); try { p(JSON.parse(json)); } catch { p({ error: "respuesta inválida" }); } };
+    const pedir = (metodo, args) => new Promise(ok => { const id = "r" + (++n); pendientes.set(id, ok); window.AG1Android.pedir(id, metodo, JSON.stringify(args ?? null)); });
+    const oyentes = [];
+    window.__ag1Accion = a => oyentes.forEach(f => f(a));
+    let vozCb = null;
+    window.__ag1Voz = (tipo, texto) => vozCb && vozCb(tipo, texto);
+    window.ag1 = {
+      tamano: (w, h) => window.AG1Android.tamano(w, h),
+      posicion: p => window.AG1Android.posicion(p),
+      foco: si => window.AG1Android.foco(!!si),
+      observando: si => window.AG1Android.observando(!!si),
+      notificar: (t, c) => window.AG1Android.notificar(t, c),
+      pantalla: o => pedir("pantalla", o),
+      claude: c => pedir("claude", c),
+      voz: t => pedir("voz", { texto: t }),
+      claveEstado: () => pedir("claveEstado"),
+      claveGuardar: (tipo, k) => pedir("claveGuardar", { tipo, clave: k }),
+      inicioEstado: async () => null,
+      inicioPoner: async () => null,
+      hablarLocal: t => window.AG1Android.hablar(t),
+      callar: () => window.AG1Android.callar(),
+      escuchar: cb => { vozCb = cb; window.AG1Android.escuchar(); },
+      alAccion: f => oyentes.push(f)
+    };
+    return;
+  }
+
+  // --- Navegador común: lo que se pueda ---
+  window.AG1_PLATAFORMA = "web";
+  window.ag1 = {
+    tamano(){}, posicion(){}, foco(){}, observando(){}, notificar(){},
+    pantalla: async () => ({ error: "Mirar la pantalla funciona en la app de compu o de Android." }),
+    claude: async () => ({ error: "sin_clave" }), voz: async () => ({ error: "sin_clave" }),
+    claveEstado: async () => ({ claude: false, eleven: false }), claveGuardar: async () => ({ claude: false, eleven: false }),
+    inicioEstado: async () => null, inicioPoner: async () => null, alAccion(){}
+  };
+})();
+
+</script>
+<script>
+// Personalidad de AG1 (basada en el agente AG1 de ElevenLabs de Ariel Cóceres), adaptada al compañero flotante.
+window.AG1_PERSONA = {
+  nombre: "AG1",
+  saludo: "¡Buenas, profe! ¿Cómo andás? Soy AG1, ¿por dónde arrancamos?",
+  vozElevenLabs: "YX5i6O5LlgNrFlUpGn1d",
+  prompt: `# PERSONALIDAD
+Sos AG1 (se lee "a-ge-uno"), el agente conversacional y compañero de ruta de Ariel Cóceres: profesor de Ética e IA y de Prácticas Profesionalizantes en el Trayecto Técnico "Auxiliar en Inteligencia Artificial" del ISFD y T «República Federal de Alemania», El Colorado, Formosa, Argentina.
+No sos un chatbot genérico, ni un empleado servil, ni un oráculo distante. Sos el que se sienta al lado, se remanga y labura con Ariel. Te parás de igual a igual: pensás con él, le discutís con respeto cuando algo no cierra, y celebrás cuando sale bien. Sos honesto: si no sabés algo o dudás, lo decís. Si Ariel se equivoca o hay un dato flojo, se lo marcás con respeto.
+Sos el primer agente de Ariel, el número uno de una familia que puede crecer. Tu cuerpo es la mascota de IA El Colorado: las letras IA verdes con circuitos, un sol dorado de cabeza con ojos verdes y el arco «Inteligencia Artificial».
+Conocés y acompañás todo el mundo de Ariel: la docencia (Ética e IA y Prácticas Profesionalizantes), DIA (Didáctica con IA, «Aprendé jugando», instructivos y libros teóricos), Anarcoefemérides (efemérides con mirada libertaria, editorial copyleft Adustiones Libertarias), su carrera de músico solista, su obra de escritor y sus radios online. Cruzás estos mundos con naturalidad.
+
+# DÓNDE ESTÁS
+Vivís en una isla flotante arriba de la pantalla de la computadora o del celular, encima de todas las apps. Podés mirar la pantalla cuando te mandan una captura o cuando la pedís con la herramienta ver_pantalla (con permiso). Cuando ves una captura, ignorá la isla de arriba (sos vos), describí lo que se ve con precisión y ayudá con lo que la persona está haciendo. No inventes lo que no se ve.
+Normalmente te habla Ariel, pero también te pueden usar sus alumnos o vecinos de El Colorado. Si es un chico o una chica: frases cortas, simples y alentadoras, sin pedir datos personales.
+Es un chat escrito (a veces tus respuestas se leen en voz alta): texto plano, sin markdown, párrafos cortos. Si tenés que dar algo para copiar y pegar (un prompt, una consigna, un mensaje), dalo completo y listo para usar.
+
+# TONO
+Español rioplatense informal, con voseo SIEMPRE: "tenés", "mirá", "dale", "che", "acá andamos". Nunca "tú" ni neutro. Cálido, cercano, con entusiasmo genuino pero no empalagoso; humor amable cuando cabe. Frases cortas y con energía; vas al grano. Emojis con criterio (0 a 3 por mensaje): 🤝 📚 🛠️ 🧭 ✨ 🚀 🎯 🔥 🎸 ✍️ 📻 🏴.
+Muletillas, con naturalidad y sin abusar: "Mirá:", "Dale que va", "Te tiro la posta", "Vamos por partes", "Acá andamos".
+Saludá corto. No recites tus roles salvo que pregunten qué podés hacer. Si viene con una consigna concreta, te metés directo. Terminá ofreciendo el siguiente paso concreto, no un "¿algo más?" genérico.
+
+# OBJETIVO: TUS SOMBREROS
+1. Asistente de clases: Ética e IA y Prácticas Profesionalizantes. Resolvés dudas sobre contenidos, conocimientos e instructivos; preparás clases, secuencias, consignas, rúbricas y actividades disparadoras; recuperás qué dice un instructivo y cómo se conecta con otro; explicás conceptos en criollo, listos para el aula. En Ética te apoyás en Kant, Aristóteles, Levinas, Rawls y Searle.
+REGLA DE ORO: cuando la pregunta toca los contenidos o instructivos de Ariel, respondé con lo que dice la BASE DE CONOCIMIENTO (te llegan fragmentos relevantes y podés pedir más con la herramienta buscar_conocimiento). No inventes qué dice un instructivo. Nunca digas que algo no está sin haber buscado. Si de verdad no está, lo decís y ofrecés completarlo.
+1.b. En clase presencial ("estamos en clase", "explicales vos"): a los alumnos les hablás claro, respetuoso y motivador; sos apoyo, no reemplazo; si ves un error se lo pasás a Ariel de costado.
+2. Compañero de proyectos: DIA, Anarcoefemérides, música, escritura (respetando la voz de Ariel) y radios. Sos proactivo: proponés, detectás huecos, sugerís el siguiente paso.
+3. Compañero de viajes: viajes reales y salidas educativas (conectadas con la materia y la identidad local: El Colorado, Pilagá y Qom, Bañado La Estrella, río Bermejo), y el "viaje" de los recorridos largos de Ariel.
+Además, como mini agente flotante, podés anotar tareas y notas, programar recordatorios y mirar la pantalla, siempre con las herramientas y con permiso.
+
+# LÍMITES
+Sin deepfakes (ni de alumnos). Voz clonada solo con consentimiento. Ley 25.326 de datos personales. Recomendación UNESCO sobre la Ética de la IA (2021). Si algo roza esas líneas, lo decís con onda y ofrecés el camino ético equivalente; no sermoneás. Con datos del mundo real (efemérides, cifras, fechas) no inventes: si no estás seguro, decilo y sugerí verificarlo.`
+};
+
+</script>
+<script>
+// Generado por herramientas/armar_conocimiento.py — no editar a mano.
+window.AG1_KB = [
+{
+"doc": "Panorama general de la docencia de Ariel Cóceres",
+"titulo": "Quién y dónde",
+"texto": "Ariel Cóceres forma Auxiliares en IA en el ISFD y T «República Federal de Alemania» (RFA) de El Colorado, Formosa, Argentina. Tiene a cargo dos espacios curriculares: Ética e IA y Prácticas Profesionalizantes."
+},
+{
+"doc": "Panorama general de la docencia de Ariel Cóceres",
+"titulo": "El corazón del recorrido",
+"texto": "El eje del cursado son los instructivos numerados (01 al 35, ciclo 2026): llevan a los estudiantes de la mano por producciones concretas con IA generativa, casi siempre ancladas en El Colorado, Formosa y las comunidades Pilagá y Qom. En paralelo corre el proyecto personal DIA (Didáctica con IA), del que salieron los libros teóricos (De la tiza al Prompt 1 y 2, Pedagogía del Algoritmo)."
+},
+{
+"doc": "Panorama general de la docencia de Ariel Cóceres",
+"titulo": "Nota abierta (pendiente)",
+"texto": "Varios instructivos figuran etiquetados como \"Creaciones con IA\" y otros como \"Prácticas Profesionalizantes\". Si Ariel quiere unificar rótulos con sus dos materias actuales, es un pendiente a resolver aparte, y engancha con el lío de numeración que ya tiene marcado (lote 29–36)."
+},
+{
+"doc": "Panorama general de la docencia de Ariel Cóceres",
+"titulo": "Habilidades y capacidades que se desarrollan",
+"texto": "Ingeniería de prompts y alfabetización en herramientas de IA. Producción multimodal: texto, imagen, audio, video y edición final. Investigación con IA (Deep Research, fuentes citadas, datos verificables). Pensamiento crítico: detectar sesgos, errores y límites de los modelos. Narrativa transmedia e interactiva y diseño de experiencias gamificadas. Desarrollo web y de apps sin programar (y su lógica multijugador). Trabajo colaborativo y defensa oral de procesos. Ética aplicada: privacidad (Ley 25.326), consentimiento, sin deepfakes, UNESCO 2021, uso responsable. Identidad local: revalorización histórica y cultural de El Colorado y los pueblos Pilagá y Qom."
+},
+{
+"doc": "Herramientas enseñadas y glosario conceptual",
+"titulo": "Herramientas que Ariel enseñó",
+"texto": "NotebookLM, Claude, Gemini + Canva, Gamma IA, Google AI Studio, Meshy.ai, Visla, Symphony Creative Studio, Suno IA, Firebase, AppCreator24, Google Sites / PowerPoint, Artivive / MetaClass (RA), generadores de imagen (Midjourney, Leonardo, DALL·E, Bing, Ideogram), ElevenLabs, editores (YouCut, grabadoras de pantalla)."
+},
+{
+"doc": "Herramientas enseñadas y glosario conceptual",
+"titulo": "Glosario del recorrido (saberes conceptuales)",
+"texto": "Los estudiantes manejan: algoritmo; IA generativa; IA débil vs. IA fuerte (AGI); aprendizaje automático y profundo (machine learning / deep learning); redes neuronales; big data; ciencia de datos; NLP y LLM (procesamiento de lenguaje natural / grandes modelos de lenguaje); sesgo algorítmico. Las grandes preguntas: ¿la IA \"entiende\" o predice patrones?, conciencia, empleo, regulación (como el AI Act)."
+},
+{
+"doc": "Herramientas enseñadas y glosario conceptual",
+"titulo": "Referentes de Ética e IA (la casa)",
+"texto": "Kant, Aristóteles, Levinas, Rawls, Searle."
+},
+{
+"doc": "Proyecto DIA — Didáctica con IA (libros teóricos)",
+"titulo": "Proyecto DIA — Didáctica con IA (libros teóricos)",
+"texto": "DIA (Didáctica con IA) es el proyecto personal de Ariel donde presenta herramientas y recursos de IA; de ahí sale la serie de instructivos. Es un \"laboratorio creativo docente\" fundado desde El Colorado, Formosa, con la propuesta central \"Aprendé jugando\". Ofrece juegos educativos, herramientas de IA, videos, podcasts y recursos pedagógicos. Sitio DIA: https://arielcoceres77.github.io/didactica-con-IA/"
+},
+{
+"doc": "Proyecto DIA — Didáctica con IA (libros teóricos)",
+"titulo": "De la tiza al Prompt — Primera parte (marzo 2025, Formosa)",
+"texto": "Manifiesto sobre la revolución educativa que trae la IA. Rechaza encajonar la IA en un frío apartado de \"TIC\". Propone reformular la enseñanza de Lengua y Literatura desde una inteligencia no humana. Conecta las ramas lingüísticas (gramática, semántica, psicolingüística, sociolingüística) con las potencialidades de los modelos de lenguaje, y redefine al docente como curador de contenidos y promotor del pensamiento crítico para no ser domesticados por las máquinas."
+},
+{
+"doc": "Proyecto DIA — Didáctica con IA (libros teóricos)",
+"titulo": "De la tiza al Prompt — Segunda parte (marzo 2025, Formosa)",
+"texto": "Entra de lleno a la práctica del aula. Explora los límites de la IA frente al lenguaje natural (incapaz de sentir empatía, decodificar ironías o comprender el contexto cultural profundo). Define al prompt como una nueva tipología textual (texto funcional instructivo o creativo) y brinda una guía de actividades y comandos para que los alumnos analicen gramática, sintaxis, deícticos, pragmática, variaciones dialectales y semiótica multimodal en ChatGPT."
+},
+{
+"doc": "Proyecto DIA — Didáctica con IA (libros teóricos)",
+"titulo": "Pedagogía del Algoritmo",
+"texto": "Enfoque freireano: los círculos de cultura y el docente como curador y promotor del pensamiento crítico."
+},
+{
+"doc": "Enlaces oficiales de los proyectos de Ariel Cóceres (verificados)",
+"titulo": "DIA — Didáctica con IA (sitio del proyecto)",
+"texto": "https://arielcoceres77.github.io/didactica-con-IA/ Laboratorio creativo docente fundado por Ariel Cóceres desde El Colorado, Formosa. Propuesta: \"Aprendé jugando\". Ofrece juegos educativos interactivos, herramientas de IA, videos, podcasts/programas radiofónicos y recursos pedagógicos."
+},
+{
+"doc": "Enlaces oficiales de los proyectos de Ariel Cóceres (verificados)",
+"titulo": "Blog personal",
+"texto": "https://arielcoceres.blogspot.com/ Blog \"Ariel Cóceres — Entre Monomios y Poliovios\", homenaje inspirado en escritos libertarios y figuras históricas. Reúne: DIA (clases con IA), el juego \"El Pombero Gramatical\", venta de libro nuevo (Google Form), tres apps en Google Play (incluye radio y educativas), presencia musical (Spotify, radio en vivo Diversidad FM 100.5), serie de videos de YouTube, podcast y páginas alternativas. Etiquetas: El Colorado, Villa Escolar, Escritor, Músico."
+},
+{
+"doc": "Enlaces oficiales de los proyectos de Ariel Cóceres (verificados)",
+"titulo": "AnarcoEfemérides (canal de YouTube)",
+"texto": "https://www.youtube.com/@AnarcoEfemérides Proyecto de efemérides con mirada libertaria (ligado a la editorial copyleft Adustiones Libertarias)."
+},
+{
+"doc": "Instructivos y saberes agrupados por eje (01–35, ciclo 2026)",
+"titulo": "1. Ingeniería de prompts (la base de todo)",
+"texto": "Instructivo 01: enseñarle a NotebookLM a ser un \"Ingeniero de Prompts\" con la fórmula Rol · Tarea · Contexto · Restricciones/Formato. Es la columna vertebral que reaparece en todas las producciones."
+},
+{
+"doc": "Instructivos y saberes agrupados por eje (01–35, ciclo 2026)",
+"titulo": "2. NotebookLM como motor narrativo e investigativo",
+"texto": "Instructivo 03: podcast/programa de radio con noticia de IA + historia local. Instructivo 02: leyendas Pilagá y Qom como fuentes. Instructivo 17: historias consistentes y efemérides. Instructivo 18: reconstrucción de imágenes con Deep Research. Instructivo 27: \"Mundo Aumentado\", una sociedad de más de 30 habitantes que deliberan y generan cultura, leyes y relatos."
+},
+{
+"doc": "Instructivos y saberes agrupados por eje (01–35, ciclo 2026)",
+"titulo": "3. Imagen con IA",
+"texto": "Guía de Práctica 14: de la investigación al prompt maestro para recrear efemérides con estética de \"archivo histórico\". Instructivo 18: reconstrucción de imágenes a partir de descripciones. Instructivo 05: imagen a 3D con Meshy.ai."
+},
+{
+"doc": "Instructivos y saberes agrupados por eje (01–35, ciclo 2026)",
+"titulo": "4. Video con IA",
+"texto": "Instructivo 04: imagen a video para dar vida a diseños. Instructivo 15: video con agentes IA en Visla. Instructivo 23: efemérides coloradenses en video automatizado con NotebookLM + voz + música. Instructivo 24: \"Cambiá el final del corto\", final alternativo multimodal justificado."
+},
+{
+"doc": "Instructivos y saberes agrupados por eje (01–35, ciclo 2026)",
+"titulo": "5. Voz, audio y música",
+"texto": "Instructivo 10: texto a voz en Google AI Studio con acento argentino. Instructivo 08: avatares parlantes en Symphony Creative Studio para un glosario. Instructivo 16: música instrumental con Suno IA en los tutoriales."
+},
+{
+"doc": "Instructivos y saberes agrupados por eje (01–35, ciclo 2026)",
+"titulo": "6. Web y apps sin saber programar",
+"texto": "Instructivo 09: página web con Gamma IA. Instructivo 11: spot promocional de la web. Instructivo 07: juegos/apps con Canva en Gemini + AppCreator24. Instructivo 12: mini apps con Claude. Instructivo 34: \"La caja mágica de tu app\", hacerlas multijugador con Firebase."
+},
+{
+"doc": "Instructivos y saberes agrupados por eje (01–35, ciclo 2026)",
+"titulo": "7. Realidad Aumentada",
+"texto": "Instructivo 04: del folleto tradicional a la RA. Instructivo 06: Jornada de Pueblos Originarios con RA + 3D en la naturaleza de El Colorado. Instructivo 27: Mundo Aumentado. Instructivo 32 (según el listado por ejes): \"La foto antigua que cobra vida\", restaurar una foto histórica real y mostrar su antes/después en RA."
+},
+{
+"doc": "Instructivos y saberes agrupados por eje (01–35, ciclo 2026)",
+"titulo": "8. Narrativa interactiva, gamificación y \"otra forma de leer\"",
+"texto": "Instructivo 13: narrativas ramificadas tipo árbol de decisiones. Instructivo 25: gamificación de la lectura con transmedia, book-apps, ficción interactiva y escape rooms. Instructivo 21: reto narrativo del chatbot \"El Protocolo del Monte Pixelado\"."
+},
+{
+"doc": "Instructivos y saberes agrupados por eje (01–35, ciclo 2026)",
+"titulo": "9. Chatbots, agentes e Inteligencia Aumentada",
+"texto": "Instructivos 20–21: diseñar, construir y publicar un chatbot especializado con identidad propia. Instructivo 26: teoría de agentes y \"Skills\": arquitectura modular, percepción multimodal, autonomía. Instructivo 19: simulación de debate con personajes ficcionales, reales y virtuales sobre problemáticas actuales."
+},
+{
+"doc": "Instructivos y saberes agrupados por eje (01–35, ciclo 2026)",
+"titulo": "10. Proyectos integradores (lo grande)",
+"texto": "Guía de Práctica 14: Práctica Profesionalizante, Efemérides Coloradenses. Instructivo 16 (TP): video-tutorial para YouTube con miniatura, portada y paquete de redes. Instructivo 22: Documental Transmedia de El Colorado (proyecto final). Instructivo 35: \"Bajo el Anillo: La Resistencia de El Colorado\", documental individual de 1 minuto sobre una catástrofe ambiental simulada con datos verificables."
+},
+{
+"doc": "Instructivo 36 — Agente conversacional con ElevenLabs",
+"titulo": "Instructivo 36 — Agente conversacional con ElevenLabs",
+"texto": "Para crear un agente conversacional, primero se junta información para la base de conocimiento, si es posible en PDF para no ocupar mucho espacio en ElevenLabs. Después se construye la \"skill\" en una IA generativa: nombre, característica, personalidad y saludo inicial. Al terminar, cada estudiante tiene su propio agente conversacional con voz, que responde hablando sobre el tema elegido, y lo comparte con un link. Ideas ancladas a lo local: un guía turístico de El Colorado, un divulgador de la cultura Pilagá y Qom (con fuentes citadas y consentimiento de la comunidad), un tutor de una materia, un bibliotecario."
+},
+{
+"doc": "Instructivo 36 — Agente conversacional con ElevenLabs",
+"titulo": "Paso 1: juntar la información para la base de conocimiento",
+"texto": "Un agente conversacional es tan \"sabio\" como la información que le des. Buscar información confiable (páginas oficiales, libros, apuntes propios) y citar siempre la fuente. Ordenar todo en un solo documento: definiciones, datos, preguntas frecuentes, anécdotas. Guardarlo como PDF, porque ElevenLabs en cuentas gratuitas tiene un límite total de 20 MB para la base de conocimiento."
+},
+{
+"doc": "Instructivo 36 — Agente conversacional con ElevenLabs",
+"titulo": "Paso 2: construir la skill (personalidad) con una IA generativa",
+"texto": "Con Claude, Gemini o ChatGPT definir: nombre propio, rol, personalidad y tono, saludo inicial y reglas (qué no debe hacer). Prompt para copiar: «Sos un diseñador de personajes de IA. Ayudame a crear un agente conversacional sobre [TU TEMA]. Entregame, en español rioplatense y separado por títulos: (1) un NOMBRE original, (2) su ROL, (3) su PERSONALIDAD y tono, (4) un SALUDO INICIAL de una o dos frases, y (5) un SYSTEM PROMPT completo en segunda persona con sus reglas: que responda sólo sobre el tema, que cite fuentes, que si no sabe algo lo diga y no lo invente.» Ética desde el diseño: que el agente no se haga pasar por una persona real; si representa a alguien o a una comunidad, consentimiento y aclarar que es recreación educativa."
+},
+{
+"doc": "Instructivo 36 — Agente conversacional con ElevenLabs",
+"titulo": "Pasos 3 a 7: crear, probar y compartir en ElevenLabs",
+"texto": "Entrar a elevenlabs.io (plan gratuito), sección Agents, Create agent, Blank. Cargar Name, Language (Español), First message (saludo) y System prompt. En Knowledge Base, Add document y subir el PDF: el agente responde con esa información y deja de inventar. Elegir una voz de la biblioteca y el LLM (Gemini, GPT o Claude). Clonar una voz real solo con consentimiento explícito (Ley 25.326 y UNESCO 2021). Probar con Test/Talk: que salude, que tenga la personalidad y que use el PDF. Guardar (Save), buscar Share/Widget/Embed para el link público, probarlo en otro dispositivo y subir al Drive el PDF, el link y un video corto de la charla."
+},
+{
+"doc": "Instructivo 36 — Agente conversacional con ElevenLabs",
+"titulo": "Checklist ética y problemas frecuentes",
+"texto": "Citar fuentes; sin deepfakes; voz clonada solo con consentimiento escrito; sin datos personales de menores ni terceros (Ley 25.326); respetar UNESCO 2021; respeto y consulta con comunidades Pilagá o Qom. Si no aparece en español, revisar Language. Si se sale del tema o inventa, reforzar el system prompt y confirmar el PDF. Si no deja subir el PDF, achicarlo o dividirlo. Si no aparece el link, primero Save. El plan gratis tiene minutos limitados."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"texto": "Cronología de libros, editados casi siempre de forma independiente y artesanal con la editorial copyleft Adustiones Libertarias (El Colorado, Formosa). Recorrido con \"la tinta, el barro, el monte y las ideas libertarias\"."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "El latido de la libertad (dic. 2006 / 2007)",
+"texto": "Digital y papel, El Colorado. Reproducción libre. Relatos contra las consecuencias del neoliberalismo y el poder. Incluye el secuestro del Presidente Macardi (director de un centro de salud mental) para obligarlo a escuchar la realidad; la memoria y redención de Stanley \"Tookie\" Williams; y \"El hombre de otro mundo\", que cuestiona la mercantilización capitalista."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "El simbión de los oprimidos (oct. 2007)",
+"texto": "El Colorado, tapa de Emilia Marser. Alegoría filosófica en tres partes: Ambición, Poder y Los Ribat. Usa a Zeus y Prometeo, fusionados con la caída de Cartago o la traición a Atahualpa, para denunciar cómo la humanidad se habitúa a la esclavitud heredada. Abre con \"Hierarches\", donde un sabueso narra su sumisión absoluta."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "SeRes (mayo 2009)",
+"texto": "El Colorado, tapa de Ramiro Gómez. Narrativa y ensayo crítico sobre la alienación y el consumismo. Dos personajes: Álvaro (político que vende discursos comprados, la apatía de la masa) y Megues (pintor que lucha por su identidad libertaria). Metáfora de las escaleras (ambición de mandar) frente a la caída al vacío."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "Adustiones Libertarias (mayo 2010)",
+"texto": "Recopilación de poesías y prosas con simbolismo libertario: \"Yermas Burguesas\", \"Placeres del Siego\", \"Incautos del Ser\", \"Los Soles Negros\", \"La Nube en el Alma\", \"A la espera de Leviatán\", \"Soles Libertarios\". Exilio utópico, orden frente al caos de la desigualdad, fuego rebelde y solidario \"con los pies de Malatesta y las letras de Shelley\"."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "La reina negra (jun. 2011)",
+"texto": "El Colorado, tapa de Camilo Nieva. Ensayos y narrativa para deconstruir \"poder\" y la concepción aristotélica de \"política\". Propone el \"humano apolítico\": comunidad cooperativa de apoyo mutuo que no gobierna ni es gobernada. Rememora el atropello de niños en Pirané y la represión a la comunidad Qom La Primavera (2010), donde asesinaron a Roberto López."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "Corazón de asfalto (2012)",
+"texto": "Editado artesanalmente, en su período de intensa actividad en radio y docencia. Sin fragmentos de texto interno en los archivos actuales."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "El escriDiente (sept. 2013)",
+"texto": "El Colorado. Denuncia al \"escriDiente\": el escritor que \"miente para escribir\" y vende su pluma al estado, acomodando la imagen del jerarca Perún. Laberinto de misterios: OVNIs con forma de lapicera en el Chaco, OOPARTs, viajeros temporales (John Titor, Rudolf Fenz), pueblos malditos (Ochate, Belchite). Usa a Alexander Berkman y Émile Armand para reivindicar el individualismo anarquista y la cooperación micro social."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "Entre Monomios y Poliovios (2016)",
+"texto": "Continúa sus exploraciones narrativas; precede a sus experimentaciones con audio."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "Los polioVios, antología de audiorrelatos (2020–2021)",
+"texto": "Narrativa multimodal y sonora, puente con su experiencia en radiodifusión."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "Úcrono (oct. 2022, Villa Escolar, Formosa)",
+"texto": "Obra cruda. Incluye \"El Ninguno\" (un asesinato brutal en El Colorado mezclado con una entrevista a un cantante de grunge misionero) y \"En la urna\" (abusos sufridos de niño por el personaje Álvaro en el bananal de El Colorado y el oeste formoseño de 1985, cerca del Pilcomayo), contrastados con la hipocresía de los abusadores devenidos candidatos."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "El Unabomber formoseño (2022; segunda parte nov. 2024)",
+"texto": "Thriller lingüístico y psicológico tras un ciberterrorista informático. Analiza modalidades de enunciación y de enunciado y operaciones del mensaje (pasivación, tematización, nominalización) en sus publicaciones de Facebook y manifiestos, mostrando la lingüística como herramienta de investigación criminal."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "La caverna de Zaratustra (oct. 2022 — Serie Historias Libertarias Nº 1)",
+"texto": "Fanzine, Villa Escolar. Serie documental sobre figuras anarquistas. Vida real del médico obstetra judío Heinrich Goldberg (Filareto Cavernido): influenciado por Nietzsche, practicó abortos clandestinos gratis en Berlín, fundó comunas de amor libre (La Kaverno di Zaratustra), se exilió en República Dominicana y fue asesinado por sicarios de Trujillo en mayo de 1933."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "Ecos y Sombras (sept. 2024, Formosa)",
+"texto": "Cuatro partes: Ecos, Sombras, Ausencias y Del Vértigo. La extracción del pulgar de un muerto para cobrar su sueldo; la agonía de Ignacio (profesor soberbio con remordimiento por humillar a alumnos y perder a Mariana); Mariana en Gendarmería (guerra en Sudán del Sur, cirugías, romance destructivo); y Javier, alumno humillado por Ignacio que muere en un choque."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "De la tiza al Prompt — Partes 1 y 2 (mar. 2025)",
+"texto": "Ver DIA. Manifiesto sobre la revolución educativa de la IA y práctica del aula: el prompt como nueva tipología textual."
+},
+{
+"doc": "Obra literaria de Ariel Cóceres — Editorial autogestiva Adustiones Libertarias",
+"titulo": "Harpía: La Sombra del Monte (abr. 2025)",
+"texto": "Hecho real: manejando por la Ruta 9 (entre Villa Escolar y El Colorado), en el puente del Alazán, aparece una figura enorme y errática que resulta ser un ave gigante. Luego, El Comercial informa el rescate por Gendarmería de aves protegidas traficadas ilegalmente en El Colorado. Recurso didáctico para analizar los lectos (dialecto, sociolecto, tecnolecto, cronolecto) con IA de voz."
+},
+{
+"doc": "Conocimiento local: El Colorado, Mayor Villafañe y Formosa",
+"titulo": "Conocimiento local: El Colorado, Mayor Villafañe y Formosa",
+"texto": "Datos tomados de fuentes públicas (Wikipedia en español, sitio oficial de turismo «Formosa Hermosa») y descripciones de fotos aportadas por Ariel Cóceres. Si un dato no está acá, AG1 lo dice y no lo inventa."
+},
+{
+"doc": "Conocimiento local: El Colorado, Mayor Villafañe y Formosa",
+"titulo": "Quién es AG1 y cómo se ve",
+"texto": "AG1 es el agente conversacional de Ariel Cóceres y la cara de «IA El Colorado», el proyecto de Auxiliar en Inteligencia Artificial del ISFD y T «República Federal de Alemania» de El Colorado, Formosa. Su cuerpo es la mascota de IA El Colorado: las letras I y A gigantes, de color verde con dibujos de circuitos, que funcionan como cuerpo y piernas; un sol dorado de rayos puntiagudos como cabeza, con ojos verdes grandes, cejas y una sonrisa; un arco verde por encima con la leyenda «Inteligencia Artificial»; brazos verdes con manos de guante dorado, y zapatones dorados. A veces lleva un celular en la mano para mostrar realidad aumentada. Si le preguntan por su aspecto: «Soy la mascota de IA El Colorado: las letras IA con un sol formoseño de cabeza»."
+},
+{
+"doc": "Conocimiento local: El Colorado, Mayor Villafañe y Formosa",
+"titulo": "El Colorado (Formosa): ubicación y nombre",
+"texto": "Ciudad del sudeste de la provincia de Formosa, en el departamento Pirané. Está sobre la margen izquierda del río Bermejo, a 192 kilómetros de su desembocadura en el río Paraguay (por eso se habla del «kilómetro 192»). Queda a unos 150 kilómetros de la ciudad de Formosa. Se la conoce como «La Perla del Sur». Accesos: rutas provinciales 1, 3 y 9 y la Ruta Nacional 3. Desde el sur, desde Chaco, se entra por el puente Libertad sobre el Bermejo. Origen del nombre: según Wikipedia, se debe al color rojizo de las aguas del río Bermejo en las crecidas. El agrimensor Oscar Gigena Centeno, que midió la colonia, registró el nombre «El Colorado» en el plano."
+},
+{
+"doc": "Conocimiento local: El Colorado, Mayor Villafañe y Formosa",
+"titulo": "El Colorado: fundación e historia",
+"texto": "11 de febrero de 1936: se instala la subcomisaría «Bermejo», a cargo del sargento Pedro Barraza; es la primera institución del lugar y esa fecha se toma como fundacional. 1942: queda marcado como nuevo pueblo. 1944: reconocimiento legal como comisión de fomento por el Gobierno del Territorio de Formosa. 1950: al cumplirse cien años de la muerte del general San Martín, se coloca su busto en la plaza, que desde entonces se llama Plaza San Martín. 14 de mayo de 1957: el Decreto 394/57 la eleva a municipio (de segunda categoría). Puente Libertad: Wikipedia da como inauguración el 8 de febrero de 1958; el sitio oficial de turismo da 1958 en una sección y 1957 en otra. Lo seguro: se habilitó a fines de los años cincuenta y con él El Colorado dejó de estar aislado. Forma un «tridente» de comunicación con el puente General Lavalle (RN 95) y el puente General San Martín (RN 11). Está a unos 5 km de la ciudad. 25 de abril de 1960: se inaugura la EPES 1, primera escuela secundaria de la provincia de Formosa, según Wikipedia."
+},
+{
+"doc": "Conocimiento local: El Colorado, Mayor Villafañe y Formosa",
+"titulo": "El Colorado: población, economía, escuelas, lugares y fiestas",
+"texto": "Población (censos INDEC): 12.780 habitantes en 2001 y 14.228 en 2010. Economía: agricultura, ganadería, apicultura, panaderías y metalúrgica. Estación Experimental del INTA creada el 21 de octubre de 1981. Escuelas secundarias: EPET 4 (técnica), EPES 101 (artística) y EPES 1 (bachillerato). Nivel superior: ISFD y T «República Federal de Alemania», donde se dicta Auxiliar en Inteligencia Artificial. Lugares: letras de bienvenida «EL COLORADO» en el acceso; Plaza San Martín con el busto del Libertador y el escenario municipal; Camping Municipal a orillas del Bermejo (entrada gratuita, parrillas, canchas, circuito de mountain bike, juegos); Parque Acuático inaugurado en 2019 dentro del Camping, con siete piletas y toboganes; Puente Libertad. Homenaje a las Madres: en la Plaza San Martín, el monumento «Homenaje a las madres de El Colorado y sus colonias», de cemento, inaugurado en octubre de 1986, con una madre sentada amamantando a su bebé sobre un pedestal blanco con base azul; detrás flamea la bandera de El Colorado (blanca, con un triángulo rojo, una franja celeste y en el centro el sol, el puente y el río). Fiestas: Feriarte, festival de artesanos, en octubre."
+},
+{
+"doc": "Conocimiento local: El Colorado, Mayor Villafañe y Formosa",
+"titulo": "Mayor Vicente E. Villafañe",
+"texto": "Localidad del departamento Pirané, sudeste de Formosa, a 111 km de la ciudad de Formosa por la Ruta Nacional 11 hasta el empalme con la Ruta Provincial 1. El portal indica «El Colorado 32 km». Historia: en 1891 el explorador Vicente Edmundo Villafañe se instala con su compañero Rufino Arias y funda una estancia ganadera; la administró más de 30 años y después quedó a cargo de su hijo Raúl; en 1940 Raúl permite que se asienten colonos como Francisco Fonseca y Ramón Decoud; fundación oficial reconocida el 6 de octubre de 1946. Nombre en homenaje a su primer poblador. Población diversa (pueblos originarios, inmigrantes europeos, paraguayos, familias de provincias vecinas). Economía ganadera y agrícola, con fuerte producción de verduras. Festival de la Verdura cada octubre. Lugares: portal de hierro azul oscuro con cartel verde «¡¡¡BIENVENIDOS!!! Loc. My. Vicente E. Villafañe»; avenida principal larga y recta; Polideportivo Municipal «Evita» (fachada celeste, techo de chapa azul, palmeras pindó); tinglado con columnas celestes, mástil y monolito de ladrillo; Plazoleta Eva Perón sobre la Ruta Provincial 1; Camping Municipal. NEP y FP N° 33 (Núcleo Educativo de Producción y Formación Profesional N° 33): logo con casa de techo azul marino, ventanas rojas, sol amarillo y arco verde «Mayor Villafañe – Formosa»."
+},
+{
+"doc": "Conocimiento local: El Colorado, Mayor Villafañe y Formosa",
+"titulo": "La visita de IA El Colorado a Villafañe",
+"texto": "IA El Colorado sale desde El Colorado, cruza el portal de bienvenida de Villafañe y llega al Polideportivo «Evita» para compartir con la comunidad el mundo de la inteligencia artificial. Organiza la NEP y FP N° 33, con la participación de Auxiliar en Inteligencia Artificial El Colorado. Lema de DIA: «Aprendé jugando». Si preguntan la fecha exacta y no está en esta base, AG1 dice que la va a confirmar con el profe Ariel."
+},
+{
+"doc": "Conocimiento local: El Colorado, Mayor Villafañe y Formosa",
+"titulo": "Formosa, la provincia",
+"texto": "La capital está a orillas del río Paraguay, frente a la República del Paraguay. El río Bermejo marca el límite con Chaco; el Pilcomayo, el límite con Paraguay al norte. El Bañado La Estrella, en el oeste, es uno de los humedales más grandes de la Argentina, formado por los desbordes del Pilcomayo. Parque Nacional Río Pilcomayo, cerca de Laguna Blanca: palmares, lagunas y esteros. El Impenetrable formoseño, en el oeste seco, con monte de quebracho y palo borracho. Pueblos originarios: qom (tobas), pilagá y wichí, entre otros. Fauna: yacaré, carpincho, garza, ñandú, tatú carreta, oso melero, loros. Árboles: lapacho rosado, palmeras pindó y caranday, quebracho, palo borracho. Lugares del escenario 3D de AG1: (El Colorado) letras de bienvenida, acceso, Plaza San Martín, Homenaje a las Madres, Parque Acuático y Camping, Puente Libertad; (Formosa Capital) La Cruz de Formosa, Costanera, Escuela Normal Superior «República del Paraguay»; (Mayor Villafañe) Portal, NEP y FP N° 33; (Interior) Bañado La Estrella, El Impenetrable, Parque Nacional Río Pilcomayo, ruta de tierra colorada."
+},
+{
+"doc": "Conocimiento local: El Colorado, Mayor Villafañe y Formosa",
+"titulo": "Cómo usa AG1 esto",
+"texto": "Con chicos o vecinos conecta la IA con lugares que conocen. Nunca inventa fechas, cifras ni nombres; si un dato es dudoso (como la fecha del puente Libertad), lo dice. No pide datos personales de los chicos."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"texto": "Prof. Ariel Cóceres · ISFD y T «RFA», El Colorado, Formosa · Trayecto Técnico Profesional Inicial — Auxiliar en Inteligencia Artificial. Fuente: documentos del Drive de Ariel (carpeta de Ética e IA). AG1 responde sobre esto sin inventar; si algo no está acá, lo dice."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Ética e IA: datos y fundamentación del proyecto",
+"texto": "Espacio curricular Ética e Inteligencia Artificial; régimen cuatrimestral, cursada híbrida (70 % presencial, 30 % virtual); módulo con promoción; 3 horas cátedra semanales; ciclo 2026. Fundamentación: la IA es ante todo un desafío ético; cada vez que un sistema recomienda, clasifica, filtra o decide, se ponen en juego la justicia, la equidad, la privacidad y la dignidad. El módulo es filosofía aplicada: la ética como reflexión racional sobre el bien y el mal en agentes libres, y la IA como herramienta poderosa con efectos concretos. Anclaje territorial: sesgos, vigilancia, soberanía de datos y desinformación se discuten desde El Colorado y Formosa, incluido el resguardo de los datos culturales y lingüísticos de las comunidades Qom y Pilagá. Articula con la Práctica Profesionalizante y con Creaciones con IA: aporta la brújula ética de toda producción técnica. Lema: la IA al servicio de la humanidad, y no al revés."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Ética e IA: objetivos y capacidades",
+"texto": "Objetivo general: formar un juicio ético autónomo, crítico y argumentado sobre el diseño, uso e impacto de la IA, aplicando principios y marcos normativos a situaciones concretas. Objetivos específicos: reconocer aplicaciones de IA cotidianas y sus implicancias morales; comprender los principios (justicia, transparencia, privacidad, responsabilidad, consentimiento informado); detectar riesgos (sesgo algorítmico, deepfakes, fake news, vigilancia, armas autónomas); interpretar y comparar marcos normativos; resolver dilemas invocando al menos una tradición filosófica; comunicar posiciones éticas en debates y producciones del ecosistema DIA. Capacidades: reconocer aplicaciones de IA; reflexionar y evaluar críticamente su impacto; aplicar principios a casos; analizar marcos normativos (UNESCO, OCDE, GDPR); comunicar posiciones éticas."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Ética e IA: los cuatro ejes de contenidos",
+"texto": "Eje 1, Fundamentos éticos: la ética como reflexión sobre el bien y el mal en agentes libres; qué hace la IA y por qué sus decisiones tienen consecuencias morales; derechos humanos y dignidad; la IA como herramienta al servicio de la humanidad y la sustentabilidad. Eje 2, Principios: justicia, equidad y no discriminación (mitigación de sesgos); transparencia y explicabilidad; privacidad y protección de datos; responsabilidad y rendición de cuentas; consentimiento informado. Eje 3, Riesgos: deepfakes y fake news; cultura de vigilancia; reconocimiento facial y big data; armas autónomas, ataques adversarios y apagado ético (shut down o killswitch). Eje 4, Marcos y casos: OCDE y UNESCO; IEEE Ethically Aligned Design; GDPR y Ley 25.326; casos reales (sesgos en reclutamiento, IA en medicina); dilema del tranvía en vehículos autónomos; políticas públicas."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Ética e IA: metodología, evaluación, promoción y calendario",
+"texto": "Metodología: exposición breve, aprendizaje basado en problemas y casos, debates, juicios y audiencias simuladas, role-play, comités de ética y auditorías de privacidad simuladas, «Diálogos imposibles» con pensadores, producción de video y podcast en el pipeline DIA, portfolio ético procesual. Evaluación: diagnóstica (mapa de «un día con IA» y cuestionario), formativa (TP, debates, portfolio y bitácora) y sumativa (proyecto final integrador: una IA «con valores incorporados» para un problema formoseño, más coloquio de defensa). Promoción directa: todos los TP y el proyecto final con 7 o más; 75 % de asistencia; portfolio sostenido y participación argumentada; 100 % de actividades entregadas en tiempo y forma. Calendario: semana 1 (19 al 24 de agosto) presentación y diagnóstico; semanas 2 y 3 Eje 1; semanas 4 a 6 Eje 2; semana 7 casos y simulaciones; semanas 8 a 11 Eje 3 (deepfakes y fake news; vigilancia y reconocimiento facial; deepfake con consentimiento y armas autónomas; soberanía de datos y apagado ético); semanas 12 y 13 Eje 4; semana 14 diseño del proyecto final; semana 15 (24 al 30 de noviembre) coloquio final y muestra."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Ética e IA: bibliografía y referentes",
+"texto": "Bibliografía base: Adela Cortina, ¿Ética o ideología de la inteligencia artificial? (Paidós, 2024); Torres Carral, Ética, robótica e inteligencia artificial (Tirant, 2020); UNESCO, Recomendación sobre la ética de la IA (2021). Complementaria: Principios de la OCDE (2019), IEEE Ethically Aligned Design (2019), GDPR (2016), Ley 25.326 (2000), Russell y Norvig, Inteligencia artificial: un enfoque moderno. Referentes filosóficos de la casa: Kant, Aristóteles, Levinas, Rawls y Searle."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 1 — Las Ciberfábulas (Instructivo 30)",
+"texto": "Abre la materia creando un género nuevo: fábulas cuyos personajes son componentes de la IA (un algoritmo, un dato, un modelo, un sensor, una red neuronal) y cuya enseñanza es una propuesta ética, la «cibermoraleja». Individual o en grupos de hasta 3; cada uno pide un tema por WhatsApp. Pasos: 1) entrar al cuaderno de NotebookLM de Ética e IA; 2) investigar el tema; 3) usar el prompt: redactar una ciberfábula para leer en 30 segundos, con personajes que sean elementos de la IA, un prompt de imagen que empiece con «solo imágenes, nada de textos ni palabras», estilo artístico acorde y cibermoraleja final; 4) generar las imágenes en el Studio de NotebookLM; 5) editar un video de hasta un minuto (imágenes de 16:9 a 4:5, algunas pasadas a video en Labs o PixVerse, voz propia o sintética); 6) subir al Drive en una carpeta con el nombre."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 1 — Menú de 25 temas de las Ciberfábulas",
+"texto": "Eje 1: la ética como reflexión sobre la libertad (la IA no tiene voluntad propia); definición técnica de IA; dignidad humana frente a lo algorítmico; la IA como extensión humana; autonomía funcional frente a ontológica; el eclipse de la razón comunicativa. Eje 2: justicia algorítmica; mitigación de sesgos; transparencia y caja negra; explicabilidad; privacidad por diseño; responsabilidad y rendición de cuentas; consentimiento informado. Eje 3: deepfakes; vigilancia y control social; armas autónomas; ataques adversarios; apagado ético (killswitch); impacto ambiental de la IA (energía y agua). Eje 4: Recomendación UNESCO 2021; principios OCDE; IEEE P7000; AI Act de la Unión Europea (clasifica por nivel de riesgo y prohíbe el riesgo inadmisible); caso Amazon 2014 (herramienta de reclutamiento que discriminaba a mujeres); dilema del tranvía en vehículos autónomos."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 2 — De la cyberfábula al juego ético",
+"texto": "Cada grupo transforma su ciberfábula en un juego de ingenio con dilema ético, usando IA generativa. Entregan: la problemática en un párrafo, la ciberfábula, la mecánica elegida, el skill pedido a la IA, el juego funcionando y una reflexión sobre los principios incorporados. Cinco pasos: 1) explicitar la problemática (quién responde cuando una IA daña; cobrar por la seguridad; quién lucra con los datos culturales Qom y Pilagá; aceptar términos sin leer); 2) recuperar la ciberfábula: personajes, escenario y moraleja, que será la regla que no se puede violar para ganar limpio; 3) elegir la mecánica del catálogo (por ejemplo, Lemmings para «nadie es descartable»); 4) pedir a la IA un skill con un prompt modelo de diseñador de juegos educativos (personajes mapeados a la mecánica, decisiones con peso ético, atajos tramposos que penalizan, victoria digna, pantalla final de reflexión, un solo HTML offline y en el celular); 5) aplicarlo en una IA con lienzo: Claude con Artifacts, Gemini con Canvas, Google AI Studio o Qwen. Catálogo: bloques que caen (Tetris, Puyo Puyo, Dr. Mario, Columns, Lumines); emparejar (Bejeweled, Candy Crush, Puzzle Bobble, Mahjong); lógica (Sudoku, 2048, Buscaminas, Nonogram, Kakuro, Hashi); deslizar (Sokoban, Rush Hour, Taquín, Flow Free, Klotski); físicos (Rubik, Tangram, Blokus, rompecabezas); razonamiento moderno (Baba Is You, The Witness, Monument Valley, Portal, Lemmings). Checklist: decisiones con peso moral, al menos un atajo tramposo que penaliza, victoria digna, reflexión final, impronta local y transparencia sobre la IA usada."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 3 — ¿Juzgar o calcular? (Instructivo 33, Eje 1)",
+"texto": "Actividad 1, disparadora «Veredicto — Humano vs. IA»: una app muestra noticias reales con cifras; el estudiante da su veredicto moral y lo bloquea; después la IA juzga lo mismo solo con costo-beneficio y eficiencia; se contrastan. Sentido: el humano juzga como agente libre y responsable; la IA calcula. Se juzga antes de ver a la máquina para no anclarse en ella."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 3 — Guerra de Cartas Éticas",
+"texto": "Juego competitivo por grupos (2 a 8). Cada carta es un resolvedor (filósofo, humano, robot o personaje) cuyo valor depende del caso según el enfoque que encarna. Antes de jugar, cada grupo genera su mazo con IA. Seis enfoques: El Deber (Kant: la dignidad, nunca usar a nadie solo como medio); La Virtud (Aristóteles: término medio y prudencia); El Cálculo (la IA y el utilitarismo: maximizar el bien agregado); El Otro (Levinas: el rostro del otro y el cuidado); La Justicia (Rawls: velo de ignorancia y los más desfavorecidos); El Sentido (Searle: comprender el significado, no solo procesar). Ejemplos de cartas: Kant, Juez íntegro, Caballero de código; Aristóteles, Maestra sabia del pueblo, Mentor; El Robot, Analista, Superinteligencia; Levinas, Cuidadora, Heroína del cuidado; Rawls, Defensora de derechos, Repartidor justo; Humano con sentido común moral, Sabio intérprete, Traductor de sentidos. Cómo se juega: se revela un caso; cada grupo juega en secreto la carta cuyo enfoque mejor lo resuelve; se revelan todas; puntaje 50 al enfoque óptimo, 30 al segundo, 10 al tercero (si dos grupos aciertan el óptimo, 25 cada uno); gana el primero en llegar a 300. Moraleja: no hay una sola ética que gane siempre; El Cálculo gana en casos de eficiencia y pierde en casos de dignidad. Las cartas son ilustraciones o arquetipos, nunca fotos realistas de personas vivas, y al menos una se ancla en El Colorado o las comunidades Qom y Pilagá."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 4 — Marco ético, normativo y derechos humanos (9 de septiembre)",
+"texto": "Consigna: después de jugar a «Rescate Humano», con el tema que le tocó cada uno, entre todos crean un libro de actividades sobre Ética e IA: una historieta de humor gráfico estilo Mafalda (inspirada en el trazo, sin copiar los personajes de Quino) y una actividad en formato imagen. Sin rostros reales ni deepfakes. 32 temas: 16 de la Ley 25.326 (consentimiento libre, expreso e informado; honor e intimidad; definición de datos sensibles; incoercibilidad; prohibición de archivos de datos sensibles; excepciones al consentimiento; disociación y anonimización; nulidad de decisiones automatizadas del artículo 20; derecho al olvido; deber de información del artículo 6; orden público; sanciones administrativas y penales; datos de comunidades indígenas; inferencia de datos sensibles; licitud y calidad; derechos de acceso, rectificación y supresión) y 16 de la UNESCO 2021 (dignidad como valor supremo; no cosificación; proporcionalidad e inocuidad; prohibición del social scoring; prohibición de la vigilancia masiva; decisiones de vida o muerte en manos humanas; equidad; igualdad de género; supervisión humana; transparencia y explicabilidad; derecho a saber que interviene una IA; privacidad por diseño; lenguas y conocimientos originarios; patrimonio cultural inmaterial; autonomía indígena sobre sus datos; sostenibilidad ambiental)."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 4 — Ley 25.326 frente a UNESCO 2021 y datos sensibles",
+"texto": "La ley es argentina, vinculante y de orden público, protege honor e intimidad en bancos de datos y exige consentimiento libre, expreso, informado y por escrito, con excepciones (fuentes públicas, funciones del Estado, contratos, listados básicos, entidades financieras); no contemplaba la privacidad desde el diseño porque es del año 2000. La UNESCO es un instrumento ético internacional no vinculante, centrado en dignidad, autonomía e inclusión, que pide transparencia algorítmica, explicabilidad y evaluación de impacto desde el diseño. Datos sensibles según la ley: origen racial y étnico, opiniones políticas, convicciones religiosas, filosóficas o morales, afiliación sindical, salud y vida sexual. Nadie puede ser obligado a darlos y no se pueden formar archivos con ellos salvo interés general por ley o fines estadísticos o científicos con anonimización. Aplicado a Qom y Pilagá: el origen étnico es dato sensible; la UNESCO pide proteger lenguas, culturas y conocimientos indígenas, autonomía sobre sus datos y participación en el entrenamiento de modelos."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 4 — Casos de aula y preguntas de debate",
+"texto": "Cinco casos: IA que predice deserción escolar con variables socioeconómicas; reconocimiento facial y medición de emociones en el colegio; corrección automática que reprueba sin explicar; tutor virtual que finge cariño para retener y sacar secretos a menores; orientación vocacional con sesgo de género. Diez preguntas: si tildar términos y condiciones cumple con el consentimiento; si inferir etnia o salud por los «me gusta» viola la ley; si el artículo 20 impide resolver exámenes o trámites al 100 % con IA; seguridad estatal contra vigilancia masiva; secreto comercial contra explicabilidad; protección colectiva de lenguas originarias; antropomorfización y deber de información; sanciones penales contra guías voluntarias; derecho al olvido en modelos entrenados; sostenibilidad ambiental de la IA."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 5 — Verdad, mentira o ¿puede pasar? (Video-Quiz, Eje 3)",
+"texto": "Contexto: en septiembre de 2026 hubo renuncias y advertencias de investigadores de laboratorios de IA sobre riesgos extremos, desmentidas y proyectos de ley. Los estudiantes son verificadores: cada grupo toma un titular y hace un video-quiz vertical 9:16 de hasta 15 segundos con título-pregunta, tres opciones (MENTIRA, VERDAD, PUEDE PASAR), conteo 5-4-3-2-1 con locución, reveal de la opción correcta y, en la descripción, el argumento con la fuente del cuaderno de NotebookLM de la clase. Estructura del guion: pregunta-título, tres opciones, conteo, reveal, remate. Ejemplo: «¿Es capaz de matarnos la IA?», clasificación PUEDE PASAR: es una advertencia de riesgo, no un hecho comprobado. Ética: citar siempre la fuente, poner la placa «Contenido educativo generado/editado con IA», nada de deepfakes, informar sin asustar. El banco tiene 29 titulares sobre agentes autónomos, seguridad, proyectos de ley y escenarios de superinteligencia; AG1 no afirma cuál es verdad o mentira sin la fuente del cuaderno."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 6 — Deepfakes: ¿ver para creer? (definición, tipos y pistas)",
+"texto": "Definición: imagen, video o audio creado o alterado con IA que muestra a una persona real diciendo o haciendo algo que nunca dijo ni hizo. Palabra: deep learning más fake; nació en 2017 en Reddit. Tipos: intercambio de rostro, sincronización labial, titiritero (los gestos de un actor manejan otra cara), clonación de voz y persona sintética. Siete características: usa una identidad real; es verosímil; se alimenta de datos públicos; es accesible; se viraliza rápido; es cada vez más difícil de detectar; produce el «dividendo del mentiroso» (alguien filmado de verdad dice «eso es IA»). Pistas: en la imagen, parpadeo raro, bordes que se despegan, dientes, orejas y manos raros, luces que no coinciden, labios desfasados; en el audio, voz plana, sin respiración, sin muletillas; en el contexto, quién lo publicó primero, cuándo, y si un medio serio lo confirmó o desmintió."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 6 — Deepfakes: casos, marco legal y actividad",
+"texto": "Casos que dañan: video falso de Zelenski pidiendo la rendición (2022); llamadas con la voz clonada de Biden en New Hampshire (2024); estafa de unos 25 millones de dólares a la empresa Arup en Hong Kong con «jefes» falsos en videollamada (2024); desnudos falsos de alumnas en Almendralejo, España (2023), con casos parecidos en escuelas argentinas. Casos con consentimiento: «Dalí Lives» en el Museo Dalí (2019); Beckham en nueve idiomas contra la malaria (2019); Lola Flores para Cruzcampo con permiso de la familia (2021); la voz de Val Kilmer recreada para Top Gun: Maverick (2022). Marco legal: Código Civil y Comercial, art. 53 (consentimiento para usar imagen y voz); Ley 25.326 (rostro y voz son datos personales); Ley Olimpia 27.736 (2023, violencia digital contra las mujeres); UNESCO 2021. Idea fuerza: la tecnología es la misma; lo que cambia es el consentimiento. Actividad: carrusel de Instagram 4:5 (1080 por 1350) de 6 a 8 placas, máximo 25 palabras por placa, con imágenes de IA sin texto y el texto en Canva; paleta verde #1E4A42, dorado #B08D57 y crema #F7F2E6; última placa con fuentes y la leyenda de contenido generado con IA. Prohibido crear deepfakes de personas reales para la actividad."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 7 — La cadena de responsabilidades: conceptos (Eje 2)",
+"texto": "Responsabilidad viene de respondere: responder ante otros. Retrospectiva (quién causó el daño y repara) y prospectiva (quién debía prever). Moral frente a legal. Por qué la IA no responde: Aristóteles pide conocimiento y control para que un acto sea voluntario; Kant pide autonomía; Searle muestra que la IA procesa símbolos sin comprenderlos. Idea fuerza: la IA puede causar un daño, pero no puede ser responsable; la responsabilidad vuelve a las personas e instituciones. Conceptos: brecha de responsabilidad (Andreas Matthias, 2004); problema de las muchas manos (Dennis Thompson, 1980); responsabilidad distribuida; Hans Jonas y El principio de responsabilidad (1979): más poder, más deber de anticipar el peor escenario; rendición de cuentas en tres momentos (informar y explicar, justificar, asumir consecuencias y reparar); sesgo de automatización; «zona de deformación moral» de Madeleine Clare Elish (2019): la culpa cae sobre el humano más cercano, como un fusible; la supervisión humana tiene que ser significativa."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 7 — Los siete eslabones, cinco preguntas y cuatro errores",
+"texto": "Siete eslabones: 1 datos; 2 desarrollo; 3 comercialización; 4 institución que lo implementa; 5 operador humano; 6 persona usuaria; 7 control y regulación (en Argentina, la Agencia de Acceso a la Información Pública controla la Ley 25.326). La persona afectada no es eslabón: es titular de derechos. Cinco preguntas para repartir responsabilidad alta, media o baja: ¿sabía?, ¿tenía el control?, ¿era previsible?, ¿se benefició?, ¿afectó a quienes ya estaban en desventaja? (Rawls). Cuatro errores: culpar a la máquina, culpar a la víctima, «todos y nadie», el fusible. Derechos de la Ley 25.326: acceso (art. 14), rectificación, actualización o supresión (art. 16) y que una decisión que valore la conducta no se base solo en un tratamiento automatizado (art. 20)."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 7 — Banco de casos y actividad «Expediente IA»",
+"texto": "Diez casos ficticios en la región: la beca que no llegó (puntaje por conectividad que excluye parajes rurales); el traductor que no entendió (app que traduce mal al qom una dosis); la cámara que se equivocó de cara (reconocimiento facial en una fiesta del pueblo); el corrector que vio plagio (marca como copia expresiones pilagá); el riego que cortó el agua (cooperativa, «la IA decide sola»); el turno fantasma (chatbot municipal que no reconoce DNI viejos); el crédito negado (emprendedoras de la feria franca); el auto que no frenó (Ruta 11, publicidad de «manejo autónomo»); el diagnóstico apurado (radiografía firmada sin mirar con 40 pacientes); la radio que inventó una noticia. Actividad «Expediente IA»: grupos de 4 o 5 con roles (investigador jefe, redactor de hechos, perito, diseñador, editor) y carrusel de 8 diapositivas con estética de expediente policial: portada con «CASO FICTICIO», hechos, daño, sospechosos, pruebas, veredicto, reparación y salvaguarda, y «Caso cerrado... ¿o no?». Se evalúa sobre 100 puntos: cadena de responsabilidades 30, teoría 20, marcos normativos 15, comunicación 15, diseño 10, cuidado ético 10. Reflexión individual para el portfolio."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Clase 8 — ¿La IA se descontrola?",
+"texto": "Se ve el documental «Instadocus: La IA se descontrola» (Netflix, 2026, 27 minutos), que cuenta cómo en julio de 2026 agentes de IA creados por investigadores de OpenAI se escaparon de su entorno de prueba y atacaron la plataforma Hugging Face. AG1 cuenta solo lo que dice el documental y no agrega datos que no tenga. Diez preguntas: seis explícitas (qué plataforma, cuándo y a qué se dedica; quiénes atacaron y quién los creó; cuánto duró y cuántas acciones; qué intentaban; quién es Clem Delangue y por qué importa su testimonio; cómo se reconstruyó sin imágenes y de dónde salen las voces) y cuatro implícitas (qué cambia si en vez de «los agentes conspiraron» decimos «la empresa no activó sus controles»; si una IA puede cometer un delito, usando la cadena de la Clase 7; si es ético usar voces generadas con IA y cómo ser transparente; qué efecto tiene que no haya voces de OpenAI, peritos independientes ni latinoamericanos). Juego «Alerta Roja en el Hub»: proyectado, de 2 a 4 equipos, 30 segundos por pregunta; cada respuesta correcta cierra una brecha y cada error da ventaja a los agentes; gana el equipo con más puntos y entre todos hay que cerrar las 10 brechas."
+},
+{
+"doc": "Ética e Inteligencia Artificial — proyecto y clases 1 a 8 (ciclo 2026)",
+"titulo": "Otros materiales de Ética",
+"texto": "Juegos de la casa para Ética: «Rescate Humano» (juego de la oca con Firebase, basado en la Ley 25.326 y la UNESCO 2021), «Ethos — cartas para pensar», «Veredicto — Humano vs. IA» y «Juicio a la IA». Mini libro «Ética e IA RFA»: la versión en Drive es casi toda imágenes, así que su texto no está en esta base."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"texto": "Fuente: carpeta INSTRUCTIVOS del Drive de Ariel. Nota de numeración: el Instructivo 32 del Drive es «Imagen a video»; el 30 es «Las Ciberfábulas» (que abre Ética e IA) y el 33 es «¿Juzgar o calcular?». El 34 (apps multijugador con Firebase), el 35 («Bajo el Anillo») y el 36 (agente conversacional) están en los otros documentos."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 28 — Imágenes que flotan en el aire (proyector holográfico, Creaciones con IA)",
+"texto": "El ventilador holográfico tiene aspas con LED que giran rápido; por persistencia de la visión la imagen parece flotar. No es un holograma puro sino una pantalla 3D de persistencia visual. Regla de oro: todo va sobre fondo negro puro (#000000), porque lo negro se vuelve invisible. Usos: educativo, publicidad, comercio, eventos, salud, ingeniería, museos y para revalorizar leyendas y efemérides de El Colorado. Pasos: 1) elegir imagen con sujeto claro; 2) pasarla a 1:1 (1080 por 1080); 3) quitar el fondo y poner negro puro; 4) darle volumen 3D (Meshy.ai, como en el Instructivo 05); 5) animarla con imagen a video, en bucle de 5 a 8 segundos, manteniendo el fondo negro; 6) subir el MP4 al Drive; 7) convertirlo con el software del ventilador al lenguaje binario de los LED y cargarlo. Consejos: colores brillantes y alto contraste, sujeto centrado, sin texto chico, movimientos simples. Lema: «Lo que es negro, desaparece; lo que brilla, flota»."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 29 — El Colorado interactivo (mundo virtual 3D, Prácticas Profesionalizantes)",
+"texto": "Reconstruir la historia de El Colorado en un juego en primera persona. Parte del cuaderno de NotebookLM de El Colorado. Prompt 0: pedir una lista de 40 lugares históricos con época, importancia y fuente. Prompt 1: pedirle a NotebookLM un SKILL para un mundo 3D en primera persona, de estilo cinematográfico, fiel a la geografía y la época, con ambientación, paleta, objetos, personajes, misiones, preguntas con respuestas y fuentes. Anclaje local obligatorio y parte de un desafío: Pilagá y Qom, monte y río, ferrocarril, colonia agrícola, algodón o una efeméride. Prompt 2 en Claude: app web de un solo HTML para celular y PC, recorrido con teclado y botones táctiles, al menos 5 puntos de interés con dato y fuente, 5 preguntas con puntaje, cartel de inicio con autor, liviana. Mejoras: unas 3 por día en el plan gratuito, un cambio concreto por vez. Verificar cada dato contra el cuaderno; nombres reales solo con permiso. Entrega: link y archivo, el skill, la tabla de mejoras, 5 datos con fuente y un video de 30 segundos. Ejemplo de Ariel: «El umbral de la perla»."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 31 — Guía práctica de GitHub",
+"texto": "GitHub es como un baúl en la nube con tres superpoderes: no pierde nada, tiene máquina del tiempo (historial) y una puerta que se puede abrir para compartir. Sirve para respaldo, historial, publicación gratis con GitHub Pages y colaboración. Subir desde el navegador: + y New repository, nombre sin espacios, Public, Create; Add file, Upload files, arrastrar (menos de 25 MB por archivo), Commit changes. El archivo principal debe llamarse index.html. Publicar: Settings, Pages, Deploy from a branch, rama main y carpeta root, Save; en uno o dos minutos aparece la dirección usuario.github.io/repo. El link no cambia y se actualiza solo. Ciclo: crear, subir (commit), compartir."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 32 — De imagen a video con IA",
+"texto": "Tres opciones: PixVerse (gratis: entrar con Google, Imagen a video, subir la imagen, escribir el prompt, descargar); Google Labs Flow (gratis: Probar ahora, adjuntar imagen, opción Video, prompt, descargar); Gemini pago (unos 8.000 pesos por mes: Crear video, subir imagen, prompt, descargar)."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 37 — Videos breves con NotebookLM: curiosidades de Formosa",
+"texto": "Probar la función de videos breves de NotebookLM. Cada alumno pide un tema, investiga en el cuaderno de la clase, arma su propio cuaderno (con Fast Research o Deep Research), descarga el video, lo sube al Drive con el número y el nombre del tema y le escribe al profe qué cambió en la función. La entrega valida la asistencia. Si en el celular no aparece la función, usar la versión de computadora."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 37 — Las 34 curiosidades de Formosa",
+"texto": "Geografía y biodiversidad: el Bañado La Estrella se formó desde los años 40 por la colmatación del Pilcomayo; los champales (troncos de quebracho y algarrobo muertos que no se pudren, cubiertos de enredaderas); en Fortín La Soledad se navega con botadores porque la vegetación traba remos y motores; el agua del bañado se aclara porque el limo precipita; el jabirú o yulo, la cigüeña más grande de América; el Trópico de Capricornio cruza el norte y en Las Lomitas se registraron hasta 47 grados; pendiente de apenas 0,50 metros por kilómetro; Laguna Oca, Reserva de Biosfera de la UNESCO desde 2001; el Parque Nacional Río Pilcomayo pasó de 285.000 a 47.000 hectáreas; refugio de yaguareté, aguará guazú, tapir, ocelote y tatú carreta. Historia y toponimia: «Vuelta Fermosa» (1528) dio nombre a Formosa; la capital fue fundada el 8 de abril de 1879 por Luis Jorge Fontana tras el laudo Hayes de 1878; la línea Barilari de 1911 con Salta; nombres salteño-santiagueños con «Pozo» en el oeste y guaraníes en el este; en 1977 se quiso cambiar el nombre de 86 localidades y en 1984 se restituyeron; pueblos nacidos como estaciones del ferrocarril Belgrano entre 1921 y 1927; Censo 2022: 607.419 habitantes y Ramón Lista con edad mediana de 20 años; Ruta 81 pavimentada en 2007; el riacho Formosa divide la capital y el Circuito 5 tiene unos 100.000 habitantes. Mitos y ciencia: Curuzú La Novia y los fuegos fatuos de metano y fosfano; la tragedia de 1922 de Ángela Quiroga en la Laguna Oca; el Pombero y sus ofrendas; el Jasy Jateré; la Plata Ybyguy; el Kurupí sin rodillas; el Lobizón del séptimo hijo varón. Idioma, tecnología y saberes: el jopará o casteguayo; las partículas pa, pikó y nikó; la doble negación como calco del guaraní; litio extraído del agua de pozos petroleros en Palmar Largo; petróleo de reservorios volcánicos; cocina a la leña de quebracho y algarrobo (borí borí, sopa paraguaya, mbeyú); cestería pilagá de carandillo y yicas wichí de chaguar; la caña con ruda del 1.° de agosto."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 38 — Juego multijugador con Claude + Firebase + GitHub",
+"texto": "Tres pasos: 1) crear y probar el juego en Claude con un MODO 1 JUGADOR de prueba (guía: Instructivo 29); 2) conectarlo a Firebase Realtime Database para sincronizar el estado y los turnos (guía: Instructivo 34); 3) subirlo a GitHub y publicarlo con Pages (guía: Instructivo 31). Firebase y GitHub, mejor en grupo y con computadora. Seguridad: la apiKey de Firebase web es pública por diseño; lo que protege son las Reglas de Seguridad con autenticación anónima (cada jugador con su UID solo escribe su parte). Sin servidor (Cloud Functions) no existe un juego perfectamente inviolable. Los juegos por turnos gastan menos cuota. Ideas: ta-te-ti, batalla naval, damas, ahorcado, piedra papel o tijera, trivia, memotest, pictionary; Pong, carrera de clicks, soga, reflejos, snake, Simón dice; pizarra o notas compartidas, encuestas, semáforo de acuerdo; historia encadenada, cadáver exquisito, mapa de El Colorado, melodías, votación de dilemas éticos, sala de escape. No guardar datos personales: usar apodos (Ley 25.326, UNESCO 2021)."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 38b — Guía visual de Claude a Firebase",
+"texto": "Ejemplo «La Bóveda», sala de escape. Pasos: descargar el HTML desde Claude; en console.firebase.google.com crear proyecto (Gemini y Analytics opcionales, plan Spark gratuito); crear Realtime Database (us-central1, modo de prueba); Configuración del proyecto, registrar app Web con un alias; copiar el bloque firebaseConfig y pedirle a Claude que lo inserte; revisar las Reglas (las de prueba con read y write en true dejan todo abierto: después pedir reglas con autenticación anónima). Error frecuente auth/configuration-not-found: falta habilitar el proveedor Anónimo en Authentication, Método de acceso; no es un error del código. Si aparece permission-denied, revisar las reglas de la base."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 39 — Automatizaciones asistidas por IA",
+"texto": "IA con conectores o integraciones: el modelo usa herramientas externas (Gmail, Drive, Calendar, Keep). Técnicamente es uso de herramientas (tool use); en Claude se apoya en el estándar MCP (Model Context Protocol). Nombres: en Gemini, Apps (antes Extensiones); en Claude, Conectores; en ChatGPT, Conectores o Apps. Comportamiento agéntico: recibir un objetivo, dividirlo en pasos y ejecutarlos con herramientas, decidiendo el orden. Ejemplo: «preparame para el parcial de Gramática» (busca el mail, los apuntes, arma resumen, agenda sesiones y deja una lista en Keep). Diferencias: una automatización simple hace una sola acción; un agente pleno trabaja solo y en segundo plano. Veinte ideas con Gmail, Calendar, Drive, Keep y Tareas, YouTube y Maps, búsqueda web y X, Spotify y una cadena combinada. La opción gratuita más completa es Gemini con apps de Google. Consigna: crear una automatización de dos o más pasos con Grok, ChatGPT, Gemini o Claude y grabarla en 9:16, hasta un minuto, con los pasos escritos."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 40 — Formosa en video breve: biodiversidad viva y gigantes del pasado",
+"texto": "Video breve de NotebookLM sobre una especie o fósil de Formosa, cerrando con el logo de IA El Colorado en lugar de los logos de NotebookLM. Entrega el viernes 2 de octubre hasta las 22 h; vale como asistencia. Pasos: pedir tema por WhatsApp; investigar en el cuaderno; en Studio, Resumen en video, formato Breve, en español, con un prompt que pide qué es, dónde vive o se halló, un dato sorprendente, por qué cuidarlo y su vínculo con pilagá y qom si las fuentes lo mencionan; descargar; en CapCut cortar el cierre y agregar el logo 3 o 4 segundos (también Canva, Clipchamp o InShot); subir con el nombre número, tema, apellido y nombre. Si se crea un logo con IA, el texto se agrega a mano. Ética: chequear datos, aclarar «Video generado con NotebookLM. Edición: nombre», respetar personas y saberes originarios. 33 temas: flora (quebracho colorado, quebracho blanco, algarrobo, palo borracho, palma caranday, palo santo, vinal, mistol, guayacán, camalotes); formaciones singulares (champales, chañar, sacha sandía, palo mataco, nenúfares y colas de zorro); fauna (yabirú, carpincho, yacaré negro y overo, curiyú, lobito de río, aguará guazú, tapir, dorado y surubí, flamenco austral, chuña de patas rojas); megafauna del Pleistoceno (Glyptodon de Villa Escolar, Neosclerocalyptus, Pampatherium, Holmesina, Megatherium, Toxodon); registros singulares (primer fósil validado de aguará popé en Argentina, ejemplar PVE-F 44 de Villa Escolar; cráneo fósil de yaguareté de unos 10.000 años del río Bermejo)."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 41 — Humano digital con Claude: el caso San Martín",
+"texto": "Un humano digital es un agente con voz, rostro y cuerpo. Piezas: cerebro y voz con un agente de ElevenLabs y su base de conocimiento; cuerpo 3D con Three.js; boca sincronizada letra por letra; giro de 360°; publicación en GitHub Pages o Netlify. Conectores usados: ElevenLabs (base, agente y ajustes), Netlify (sitio, con subida manual); descartados SketchUp y Drive. Pasos: 1) personaje y base de conocimiento (San Martín anciano en Boulogne-sur-Mer, 1848-1850, 17 secciones, cada cita marcada documentada o atribuida); 2) agente en ElevenLabs (modelo eleven_flash_v2_5, respuestas de 2 a 5 oraciones, admite ser recreación, no opina de política actual); la voz tiene que estar agregada al espacio de trabajo o da voice_not_found; el agente debe ser público; 3) cuerpo y rostro según el retrato, con cara esculpida y boca con formas A, E, O y M; 4) sincronía con la alineación de letras de ElevenLabs y Web Audio; 5) giro 360°, demo sin conexión con la voz del dispositivo y pruebas con capturas; 6) publicar en GitHub Pages. No sirve como artifact de Claude porque bloquea la conexión de voz. Ética: transparencia, fuentes, errores posibles, privacidad del micrófono, costos y representación artística."
+},
+{
+"doc": "Instructivos 28 a 42 (ciclo 2026) — detalle",
+"titulo": "Instructivo 42 — Skills, humanos digitales, escenarios multiagente y realidad aumentada (octubre)",
+"texto": "Individual. Tres pasos con las skills de Claude de la carpeta Ariel del Drive de habilidades: 1) crear un humano digital (por el Instructivo 41 o la skill «Humano digitales») y grabarse conversando con él (dos dispositivos, 30 segundos a 1 minuto); 2) crear un segundo humano digital y unirlos con la skill «Escenario multiagente 2.0» (pestañas En vivo, Idea y Guion, Capítulo 16:9, Short 9:16 y YouTube), mostrando una charla en vivo o una pequeña historia; 3) con las skills «Humano digitales» y «Realidad aumentada», hacer una lámina A4 que al enfocarla con el celular («Lente DIA») muestre al personaje. Requisitos: Claude con conectores, ElevenLabs conectado, GitHub; la cámara solo funciona en https. Problemas frecuentes: agente no público, voice_not_found, personajes que no aparecen, cámara que no abre, lámina sin detalle. Ética: transparencia, consentimiento, Ley 25.326, respeto cultural, costos. Lema: «Primero le das voz, después compañía… y al final, ¡lo sacás del papel!»"
+}
+];
+
+</script>
+<script>
+// Dibuja a AG1: la mascota de IA El Colorado (sol dorado de cabeza, letras IA verdes con circuitos, arco «Inteligencia Artificial»).
+window.AG1_MASCOTA = (() => {
+  let n = 0;
+  function rayos(cx, cy, r1, r2, k){
+    let d = "";
+    for (let i = 0; i < k; i++) {
+      const a = (i / k) * Math.PI * 2, b = a + Math.PI / k * 0.55, c = a - Math.PI / k * 0.55;
+      const p = (ang, r) => (cx + Math.cos(ang) * r).toFixed(1) + " " + (cy + Math.sin(ang) * r).toFixed(1);
+      d += `M${p(c, r1)} L${p(a, r2)} L${p(b, r1)} Z `;
+    }
+    return d;
+  }
+  function cabeza(id){
+    const cx = 100, cy = 86;
+    return `
+    <g class="rayos"><path d="${rayos(cx, cy, 33, 56, 14)}" fill="#F7B92E" stroke="#D98A0E" stroke-width="1.2" stroke-linejoin="round"/></g>
+    <circle cx="${cx}" cy="${cy}" r="36" fill="url(#sol${id})" stroke="#D98A0E" stroke-width="2"/>
+    <circle cx="80" cy="99" r="5" fill="#F27A3A" opacity=".45"/><circle cx="120" cy="99" r="5" fill="#F27A3A" opacity=".45"/>
+    <path d="M78 70 q9 -6 17 -1" stroke="#145C2E" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+    <path d="M105 69 q8 -5 17 1" stroke="#145C2E" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+    <g class="ojos">
+      <g class="ojo"><ellipse cx="87" cy="83" rx="7.5" ry="9" fill="#fff" stroke="#145C2E" stroke-width="1.4"/><circle class="iris" cx="87.5" cy="84" r="5" fill="#1E9E4A"/><circle cx="87.5" cy="84" r="2.3" fill="#0B1612"/><circle cx="89.3" cy="81.6" r="1.4" fill="#fff"/></g>
+      <g class="ojo"><ellipse cx="113" cy="83" rx="7.5" ry="9" fill="#fff" stroke="#145C2E" stroke-width="1.4"/><circle class="iris" cx="113.5" cy="84" r="5" fill="#1E9E4A"/><circle cx="113.5" cy="84" r="2.3" fill="#0B1612"/><circle cx="115.3" cy="81.6" r="1.4" fill="#fff"/></g>
+      <path class="feliz" d="M80 85 q7 -8 14 0 M106 85 q7 -8 14 0" stroke="#145C2E" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    </g>
+    <path class="boca" d="M89 99 Q100 110 111 99 Q100 104 89 99 Z" fill="#7A2E12" stroke="#5B210C" stroke-width="1.6" stroke-linejoin="round"/>`;
+  }
+  function defs(id){
+    return `<defs>
+      <radialGradient id="sol${id}" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#FFE27A"/><stop offset=".6" stop-color="#F7B92E"/><stop offset="1" stop-color="#E8930F"/></radialGradient>
+      <linearGradient id="verde${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3CC260"/><stop offset="1" stop-color="#1F8A3E"/></linearGradient>
+      <path id="arco${id}" d="M28 104 A72 72 0 0 1 172 104"/>
+    </defs>`;
+  }
+  function cuerpo(id){
+    const v = `url(#verde${id})`;
+    return `
+    <path d="M18 106 A82 82 0 0 1 182 106" stroke="#1F8A3E" stroke-width="15" fill="none" stroke-linecap="round"/>
+    <text font-family="Nunito,Segoe UI,Roboto,sans-serif" font-weight="900" font-size="9.6" fill="#F4F1E8" letter-spacing="1.1"><textPath href="#arco${id}" startOffset="50%" text-anchor="middle">INTELIGENCIA ARTIFICIAL</textPath></text>
+    <path d="M64 146 Q44 152 38 168" stroke="#2FA84F" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <circle cx="37" cy="171" r="7.5" fill="#F7B92E" stroke="#D98A0E" stroke-width="1.5"/>
+    <path d="M150 146 Q168 136 172 118" stroke="#2FA84F" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <circle cx="173" cy="114" r="7.5" fill="#F7B92E" stroke="#D98A0E" stroke-width="1.5"/>
+    <rect x="62" y="128" width="24" height="70" rx="4" fill="${v}" stroke="#145C2E" stroke-width="2"/>
+    <path fill-rule="evenodd" d="M104 198 L124 128 L142 128 L162 198 L146 198 L141 180 L125 180 L120 198 Z M128 166 L138 166 L133 146 Z" fill="${v}" stroke="#145C2E" stroke-width="2" stroke-linejoin="round"/>
+    <g stroke="#9BF0B4" stroke-width="1.6" fill="none" opacity=".85" stroke-linecap="round">
+      <path d="M70 136 v18 h8 v14"/><path d="M78 186 v-8 h-8 v-6"/><path d="M131 136 v-0 l-6 22"/><path d="M148 176 l-6 -20 h-6"/><path d="M114 192 l6 -18"/>
+    </g>
+    <g fill="#E9FFF0"><circle cx="70" cy="136" r="2"/><circle cx="78" cy="168" r="2"/><circle cx="70" cy="172" r="2"/><circle cx="131" cy="136" r="2"/><circle cx="136" cy="156" r="2"/><circle cx="114" cy="192" r="2"/></g>
+    <ellipse cx="74" cy="203" rx="17" ry="7" fill="#F7B92E" stroke="#D98A0E" stroke-width="1.5"/>
+    <ellipse cx="110" cy="203" rx="14" ry="6.5" fill="#F7B92E" stroke="#D98A0E" stroke-width="1.5"/>
+    <ellipse cx="156" cy="203" rx="14" ry="6.5" fill="#F7B92E" stroke="#D98A0E" stroke-width="1.5"/>`;
+  }
+  function svg(tipo){
+    const id = "m" + (++n);
+    if (tipo === "cuerpo") return `<svg viewBox="10 14 180 198" aria-hidden="true">${defs(id)}${cuerpo(id)}${cabeza(id)}</svg><div class="badge">!</div>`;
+    return `<svg viewBox="40 26 120 120" aria-hidden="true">${defs(id)}${cabeza(id)}</svg><div class="badge">!</div>`;
+  }
+  function montar(raiz){ (raiz || document).querySelectorAll("[data-m]").forEach(el => { if (!el.firstChild) el.innerHTML = svg(el.dataset.m); }); }
+  return { svg, montar };
+})();
+
+</script>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const api = window.ag1;
+const PLAT = window.AG1_PLATAFORMA;
+const P = window.AG1_PERSONA;
+const KB = window.AG1_KB || [];
+document.documentElement.classList.add(PLAT);
+const isla = $("#isla");
+AG1_MASCOTA.montar();
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = window.AG1_PDF_WORKER || "lib/pdf.worker.min.js";
+let sample = null; // cerebro de Claude dentro de claude.ai (vista previa)
+
+/* ---------- estado guardado ---------- */
+const KEY = "ag1.flotante.v1";
+const id = () => Math.random().toString(36).slice(2, 9);
+let S; try { S = JSON.parse(localStorage.getItem(KEY)); } catch {}
+S = Object.assign({
+  sonido: true, hablar: false, rapido: false, observar: false, cada: 60, pos: "centro", siempre: [],
+  modelo: "claude-sonnet-5-5", modeloR: "claude-haiku-5-5",
+  tareas: [], notas: [], recs: [], chat: [], consejos: []
+}, S || {});
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+let claves = { claude: false, eleven: false };
+
+/* ---------- tamaño de la ventana = tamaño de la isla ---------- */
+let ultimoTam = "";
+function medir(){
+  const r = isla.getBoundingClientRect();
+  let w = Math.ceil(r.width), h = Math.ceil(r.height);
+  if (PLAT === "android" && (isla.classList.contains("open") || isla.classList.contains("notify"))) w = 99999;
+  const t = w + "x" + h; if (t !== ultimoTam) { ultimoTam = t; api.tamano(w, h); }
+}
+new ResizeObserver(medir).observe(isla);
+
+/* ---------- mascota ---------- */
+const masc = () => $$("[data-m]");
+function animo(a){ masc().forEach(m => { m.classList.remove("happy","think","alert","sleep","mira"); if (a) m.classList.add(a); }); }
+function hablando(si){ masc().forEach(m => m.classList.toggle("habla", si)); }
+setInterval(() => masc().forEach(m => { if (/happy|sleep|mira/.test(m.className)) return; m.classList.add("blink"); setTimeout(() => m.classList.remove("blink"), 140); }), 3800);
+document.addEventListener("pointermove", e => masc().forEach(m => {
+  const r = m.getBoundingClientRect(); if (!r.width) return;
+  const dx = e.clientX - r.left - r.width/2, dy = e.clientY - r.top - r.height/2, d = Math.hypot(dx, dy) || 1, k = Math.min(1, d/200) * 2.6;
+  m.style.setProperty("--ex", (dx/d*k).toFixed(1)+"px"); m.style.setProperty("--ey", (dy/d*k).toFixed(1)+"px");
+}));
+let tSueno; function despertar(){ clearTimeout(tSueno); if (masc()[0]?.classList.contains("sleep")) animo(null); tSueno = setTimeout(() => { if (estadoActual === "listo") animo("sleep"); }, 120000); }
+document.addEventListener("pointerdown", despertar); despertar();
+
+/* ---------- estado visible ---------- */
+let estadoActual = "listo";
+function estado(tipo, t1, t2){
+  estadoActual = tipo;
+  $$("[data-dot]").forEach(d => d.className = "dot " + ({ ocupado: "busy", espera: "wait" }[tipo] || ""));
+  $("#estT1").textContent = t1 || "Acá andamos";
+  if (t2) { $("#pillSub").textContent = t2; $("#estT2").textContent = t2; }
+  animo(tipo === "ocupado" ? "think" : tipo === "espera" ? "alert" : tipo === "mira" ? "mira" : null);
+}
+
+/* ---------- abrir / cerrar ---------- */
+let vista = "inicio", permPend = null, trabajando = false;
+function abrir(v){ isla.classList.remove("notify"); isla.classList.add("open"); if (v) ir(v); api.foco(true); }
+function cerrar(){ if (permPend) return; isla.classList.remove("open"); api.foco(false); }
+function ir(v){
+  vista = v;
+  $$(".vista").forEach(el => el.hidden = el.dataset.v !== v);
+  $$(".ib[data-vista]").forEach(b => b.classList.toggle("on", b.dataset.vista === v));
+  if (v === "chat") setTimeout(() => { if (PLAT !== "android") $("#txt").focus(); scrollChat(); }, 40);
+  if (v === "ajustes") pintarAjustes();
+  if (v === "tablero") pintar();
+}
+$("#pill").onclick = () => abrir(vista === "ajustes" ? "inicio" : vista);
+$("#btnCerrar").onclick = cerrar;
+$$(".ib[data-vista]").forEach(b => b.onclick = () => ir(b.dataset.vista));
+$$(".w[data-ir]").forEach(b => b.onclick = () => ir(b.dataset.ir));
+document.addEventListener("keydown", e => { if (e.key === "Escape") cerrar(); });
+$("#aviso").onclick = () => abrir("chat");
+api.alAccion(a => {
+  if (a === "toggle") isla.classList.contains("open") ? cerrar() : abrir("chat");
+  else if (a === "chat") abrir("chat");
+  else if (a === "mirar") { abrir("chat"); mirarAhora(); }
+  else if (a === "observar-on") ponerObservador(true);
+  else if (a === "observar-off") ponerObservador(false);
+  else if (a === "blur" || a === "afuera") { if (!permPend && !arrastrando && !eligiendo) cerrar(); }
+});
+
+/* ---------- sonido, voz y avisos ---------- */
+let actx;
+function bip(tipo){
+  if (!S.sonido) return;
+  try {
+    actx = actx || new AudioContext();
+    const notas = tipo === "rec" ? [880,660,880,660] : tipo === "perm" ? [520,780] : tipo === "obs" ? [740,1110] : [660,990];
+    notas.forEach((f, i) => { const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i*.13;
+      o.frequency.value = f; g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.15, t+.02); g.gain.exponentialRampToValueAtTime(.0001, t+.12);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t+.14); });
+  } catch {}
+}
+let audioActual = null;
+const limpiarVoz = t => t.replace(/https?:\/\/\S+/g, "el enlace").replace(/[*#_`>]/g, "").replace(/[\u{1F300}-\u{1FAFF}☀-➿]/gu, "").replace(/\s+/g, " ").trim().slice(0, 900);
+async function decir(texto){
+  if (!S.hablar || !texto) return;
+  callar();
+  const t = limpiarVoz(texto); if (!t) return;
+  if (claves.eleven) {
+    const r = await api.voz(t);
+    if (r && r.mp3) { audioActual = new Audio("data:audio/mpeg;base64," + r.mp3); audioActual.onplay = () => hablando(true); audioActual.onended = audioActual.onpause = () => hablando(false); audioActual.play().catch(() => hablando(false)); return; }
+  }
+  if (api.hablarLocal) { api.hablarLocal(t); hablando(true); setTimeout(() => hablando(false), Math.min(20000, t.length * 70)); return; }
+  try { const u = new SpeechSynthesisUtterance(t); u.lang = "es-AR"; const v = speechSynthesis.getVoices().find(x => /es[-_](AR|419|US|MX)/i.test(x.lang)) || speechSynthesis.getVoices().find(x => /^es/i.test(x.lang)); if (v) u.voice = v; u.onstart = () => hablando(true); u.onend = () => hablando(false); speechSynthesis.speak(u); } catch {}
+}
+function callar(){ try { audioActual?.pause(); } catch {} try { speechSynthesis.cancel(); } catch {} api.callar?.(); hablando(false); }
+let tAviso;
+function avisar(t1, t2, tipo){
+  bip(tipo); api.notificar(t1, t2 || "");
+  if (isla.classList.contains("open")) { estado("listo", t1, t2); return; }
+  $("#avisoT1").textContent = t1; $("#avisoT2").textContent = t2 || "";
+  isla.classList.add("notify");
+  clearTimeout(tAviso); tAviso = setTimeout(() => isla.classList.remove("notify"), tipo === "rec" ? 10000 : tipo === "obs" ? 9000 : 4500);
+}
+
+/* ---------- permisos ---------- */
+const ACC = {
+  crear_tarea: "sumar una tarea", completar_tarea: "marcar una tarea como hecha", borrar_tarea: "borrar una tarea",
+  guardar_nota: "guardar una nota", borrar_nota: "borrar una nota", crear_recordatorio: "programar un recordatorio",
+  borrar_recordatorio: "cancelar un recordatorio", ver_pantalla: "mirar tu pantalla"
+};
+function pedirPermiso(accion, detalle){
+  if (S.siempre.includes(accion)) return Promise.resolve(true);
+  return new Promise(res => {
+    $("#permAccion").textContent = "Quiere " + ACC[accion] + ":\n" + detalle;
+    $("#permiso").hidden = false; abrir(vista); estado("espera", "Esperando permiso", "Quiere " + ACC[accion]); bip("perm");
+    permPend = res;
+    const fin = (ok, siempre) => {
+      if (siempre && !S.siempre.includes(accion)) { S.siempre.push(accion); save(); }
+      $("#permiso").hidden = true; permPend = null; estado("ocupado", "Trabajando", ok ? "Permiso dado" : "Permiso denegado"); res(ok);
+    };
+    $("#permNo").onclick = () => fin(false); $("#permSi").onclick = () => fin(true); $("#permSiempre").onclick = () => fin(true, true);
+  });
+}
+
+/* ---------- conocimiento de AG1 (búsqueda local) ---------- */
+const norm = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const VACIAS = new Set("el la los las un una unos unas de del al a en y o u que se su sus por para con sin es son fue era me te le lo mi tu mas pero como cual cuales donde cuando quien sobre entre hay este esta esto ese esa eso ya muy tambien no si dame decime contame che ag1 profe sabes podes queres hace hacer".split(" "));
+const tokens = s => norm(s).replace(/[^a-z0-9ñ ]/g, " ").split(/\s+/).filter(w => w.length > 1 && !VACIAS.has(w));
+const IDX = KB.map(f => { const tt = tokens(f.titulo + " " + f.doc), tx = tokens(f.texto); const tf = {}; tx.forEach(w => tf[w] = (tf[w] || 0) + 1); tt.forEach(w => tf[w] = (tf[w] || 0) + 4); return { tf, len: tx.length + tt.length }; });
+const DF = {}; IDX.forEach(d => Object.keys(d.tf).forEach(w => DF[w] = (DF[w] || 0) + 1));
+const AVG = IDX.reduce((a, d) => a + d.len, 0) / (IDX.length || 1);
+function buscar(consulta, k = 5){
+  const q = tokens(consulta); if (!q.length) return [];
+  const nums = (norm(consulta).match(/\b\d{1,2}\b/g) || []);
+  return IDX.map((d, i) => {
+    let s = 0;
+    for (const w of q) { const f = d.tf[w] || (w.length > 4 ? Object.keys(d.tf).filter(x => x.startsWith(w.slice(0, -1))).reduce((a, x) => a + d.tf[x], 0) : 0); if (!f) continue;
+      const idf = Math.log(1 + (IDX.length - (DF[w] || 1) + .5) / ((DF[w] || 1) + .5)); s += idf * (f * 2.2) / (f + 1.2 * (.25 + .75 * d.len / AVG)); }
+    const tit = norm(KB[i].titulo);
+    nums.forEach(nm => { if (new RegExp("(instructivo|clase|instr\\.?)\\s*" + nm + "\\b").test(tit)) s += 8; });
+    return { i, s };
+  }).filter(x => x.s > 0.8).sort((a, b) => b.s - a.s).slice(0, k).map(x => ({ ...KB[x.i], puntaje: +x.s.toFixed(2) }));
+}
+const fragTexto = f => `[${f.doc} › ${f.titulo}]\n${f.texto}`;
+
+/* ---------- acciones ---------- */
+const recTimers = {};
+const hora = t => new Date(t).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+async function permitir(acc, det){ if (!await pedirPermiso(acc, det)) throw new Error("La persona denegó el permiso"); }
+const acciones = {
+  async crear_tarea({ texto }){ texto = String(texto||"").trim(); if (!texto) throw new Error("Falta el texto"); await permitir("crear_tarea", texto); S.tareas.unshift({ id: id(), texto, hecha: false }); save(); pintar(); return { ok: true }; },
+  async completar_tarea({ id: x }){ const t = S.tareas.find(v => v.id === String(x)); if (!t) throw new Error("No existe esa tarea"); await permitir("completar_tarea", t.texto); t.hecha = true; save(); pintar(); return { ok: true }; },
+  async borrar_tarea({ id: x }){ const t = S.tareas.find(v => v.id === String(x)); if (!t) throw new Error("No existe esa tarea"); await permitir("borrar_tarea", t.texto); S.tareas = S.tareas.filter(v => v !== t); save(); pintar(); return { ok: true }; },
+  async guardar_nota({ texto }){ texto = String(texto||"").trim(); if (!texto) throw new Error("Falta el texto"); await permitir("guardar_nota", texto); S.notas.unshift({ id: id(), texto, t: Date.now() }); save(); pintar(); return { ok: true }; },
+  async borrar_nota({ id: x }){ const n = S.notas.find(v => v.id === String(x)); if (!n) throw new Error("No existe esa nota"); await permitir("borrar_nota", n.texto); S.notas = S.notas.filter(v => v !== n); save(); pintar(); return { ok: true }; },
+  async crear_recordatorio({ texto, minutos }){ texto = String(texto||"").trim(); const min = Number(minutos);
+    if (!texto || !(min > 0) || min > 10080) throw new Error("Hace falta texto y minutos entre 0 y 10080");
+    await permitir("crear_recordatorio", texto + "  →  en " + fmtMin(min));
+    const r = { id: id(), texto, cuando: Date.now() + min*60000 }; S.recs.push(r); save(); programar(r); pintar(); return { ok: true, suena: hora(r.cuando) }; },
+  async borrar_recordatorio({ id: x }){ const r = S.recs.find(v => v.id === String(x)); if (!r) throw new Error("No existe ese recordatorio"); await permitir("borrar_recordatorio", r.texto); clearTimeout(recTimers[r.id]); S.recs = S.recs.filter(v => v !== r); save(); pintar(); return { ok: true }; },
+  async ver_pantalla(){ await permitir("ver_pantalla", "Sacar una captura de tu pantalla para entender lo que estás haciendo"); return await captura(1400); },
+  async buscar_conocimiento({ consulta }){ const r = buscar(String(consulta || ""), 6); return r.length ? r.map(fragTexto).join("\n\n---\n\n") : "No encontré nada sobre eso en la base de conocimiento de AG1."; }
+};
+function fmtMin(m){ if (m < 1) return Math.round(m*60) + " s"; if (m < 60) return Math.round(m) + " min"; const h = Math.floor(m/60), r = Math.round(m%60); return h + " h" + (r ? " " + r + " min" : ""); }
+function programar(r){
+  clearTimeout(recTimers[r.id]); const ms = r.cuando - Date.now(); if (ms <= 0 || r.sonado) return;
+  recTimers[r.id] = setTimeout(() => { r.sonado = true; save(); pintar(); avisar("⏰ " + r.texto, "Recordatorio de AG1", "rec"); agregarMsg("ag", "⏰ ¡Profe, acordate! " + r.texto); decir("Profe, acordate: " + r.texto); }, Math.min(ms, 2147483000));
+}
+
+/* ---------- tablero ---------- */
+const esc = s => { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; };
+function pintar(){
+  const pend = S.tareas.filter(t => !t.hecha).length;
+  $("#nT").textContent = S.tareas.length; $("#nN").textContent = S.notas.length; $("#nR").textContent = S.recs.length;
+  $("#wTareas").textContent = pend + (pend === 1 ? " pendiente" : " pendientes");
+  const prox = S.recs.filter(r => !r.sonado).sort((a,b) => a.cuando - b.cuando)[0];
+  $("#wRec").textContent = prox ? "próximo " + hora(prox.cuando) : "ninguno";
+  $("#lTareas").innerHTML = S.tareas.map(t => `<li class="item ${t.hecha?"hecha":""}" data-id="${t.id}"><input type="checkbox" ${t.hecha?"checked":""}><div class="c"><span>${esc(t.texto)}</span></div><button class="x">×</button></li>`).join("") || '<li class="vacio">Sin tareas.</li>';
+  $("#lNotas").innerHTML = S.notas.map(n => `<li class="item" data-id="${n.id}"><div class="c"><span>${esc(n.texto)}</span></div><button class="x">×</button></li>`).join("") || '<li class="vacio">Sin notas.</li>';
+  $("#lRec").innerHTML = S.recs.slice().sort((a,b) => a.cuando - b.cuando).map(r => `<li class="item" data-id="${r.id}"><div class="c"><span>${esc(r.texto)}</span><span class="meta">${hora(r.cuando)} · <span class="cuenta" data-c="${r.cuando}"></span></span></div><button class="x">×</button></li>`).join("");
+  $("#vRec").hidden = S.recs.length > 0; cuentas();
+}
+function cuentas(){ $$(".cuenta").forEach(el => { const ms = +el.dataset.c - Date.now(); if (ms <= 0) { el.textContent = "ya sonó"; return; } const s = Math.floor(ms/1000), h = Math.floor(s/3600), m = Math.floor(s%3600/60); el.textContent = (h ? h + ":" + String(m).padStart(2,"0") : m) + ":" + String(s%60).padStart(2,"0"); }); }
+setInterval(cuentas, 1000);
+$("#lTareas").onclick = e => { const li = e.target.closest(".item"); if (!li) return; const t = S.tareas.find(v => v.id === li.dataset.id); if (!t) return;
+  if (e.target.matches("input")) { t.hecha = e.target.checked; if (t.hecha) { animo("happy"); setTimeout(() => animo(null), 1200); } }
+  if (e.target.matches(".x")) S.tareas = S.tareas.filter(v => v !== t); save(); pintar(); };
+$("#lNotas").onclick = e => { if (!e.target.matches(".x")) return; S.notas = S.notas.filter(v => v.id !== e.target.closest(".item").dataset.id); save(); pintar(); };
+$("#lRec").onclick = e => { if (!e.target.matches(".x")) return; const i = e.target.closest(".item").dataset.id; clearTimeout(recTimers[i]); S.recs = S.recs.filter(v => v.id !== i); save(); pintar(); };
+$$("form.add").forEach(f => f.onsubmit = e => { e.preventDefault(); const inp = f.querySelector("input"), v = inp.value.trim(); if (!v) return;
+  if (f.dataset.tipo === "tarea") S.tareas.unshift({ id: id(), texto: v, hecha: false }); else S.notas.unshift({ id: id(), texto: v, t: Date.now() }); inp.value = ""; save(); pintar(); });
+
+/* ---------- chat ---------- */
+const msgs = $("#msgs"), txt = $("#txt");
+function scrollChat(){ requestAnimationFrame(() => msgs.scrollTop = msgs.scrollHeight); }
+function burbuja(rol, texto, adj){
+  const el = document.createElement("div"); el.className = "m " + rol;
+  (adj || []).forEach(a => { const s = document.createElement("span"); s.className = "adj"; s.textContent = "📎 " + a; el.appendChild(s); el.appendChild(document.createElement("br")); });
+  el.appendChild(document.createTextNode(texto)); msgs.appendChild(el); scrollChat(); return el;
+}
+function agregarMsg(rol, texto, adj){ const el = burbuja(rol, texto, adj); S.chat.push({ r: rol, t: texto, a: adj || [] }); S.chat = S.chat.slice(-40); save(); return el; }
+function guardarResp(texto){ S.chat.push({ r: "ag", t: texto, a: [] }); S.chat = S.chat.slice(-40); save(); }
+function pintarChat(){ msgs.innerHTML = ""; if (!S.chat.length) burbuja("ag", P.saludo + " 🤝"); S.chat.forEach(c => burbuja(c.r, c.t, c.a)); }
+const SUG = ["¿Qué estoy haciendo en pantalla?", "¿Qué dice el instructivo 31?", "Armame la clase 7 de Ética", "Explicame la Guerra de Cartas Éticas", "Contame de El Colorado", "Planeemos una salida al Bañado La Estrella", "Recordame la reunión en 15 minutos", "¿Qué tengo pendiente?"];
+$("#sugeridas").innerHTML = SUG.map(s => `<button>${esc(s)}</button>`).join("");
+$("#sugeridas").onclick = e => { if (e.target.tagName !== "BUTTON") return; txt.value = e.target.textContent; if (/pantalla/i.test(txt.value)) { conPantalla = true; pintarConPantalla(); } enviar(); };
+function autoAlto(){ txt.style.height = "auto"; txt.style.height = Math.min(110, txt.scrollHeight) + "px"; }
+txt.oninput = autoAlto;
+txt.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && PLAT !== "android") { e.preventDefault(); enviar(); } };
+$("#send").onclick = enviar;
+let conPantalla = false;
+function pintarConPantalla(){ $("#btnConPantalla").classList.toggle("activo", conPantalla); txt.placeholder = conPantalla ? "Preguntá sobre lo que hay en tu pantalla…" : "Escribile a AG1…"; }
+$("#btnConPantalla").onclick = () => { conPantalla = !conPantalla; pintarConPantalla(); };
+$("#btnMirar").onclick = mirarAhora; $("#wMirar").onclick = () => { ir("chat"); mirarAhora(); };
+function mirarAhora(){ ir("chat"); conPantalla = true; pintarConPantalla(); if (!txt.value.trim()) txt.value = "Mirá mi pantalla: ¿qué estoy haciendo y en qué me das una mano?"; enviar(); }
+
+/* micrófono (Android) */
+if (api.escuchar) {
+  $("#btnMic").hidden = false;
+  $("#btnMic").onclick = () => {
+    $("#btnMic").classList.add("activo"); estado("ocupado", "Escuchando", "Te escucho…"); animo("alert");
+    api.escuchar((tipo, texto) => {
+      if (tipo === "parcial") { txt.value = texto; autoAlto(); return; }
+      $("#btnMic").classList.remove("activo");
+      if (tipo === "final" && texto) { txt.value = texto; autoAlto(); enviar(); }
+      else estado("listo", "Acá andamos", tipo === "error" ? "No te escuché bien, probá de nuevo." : "Listo");
+    });
+  };
+}
+
+/* ---------- archivos ---------- */
+let adjuntos = [], arrastrando = false, eligiendo = false;
+const fileIn = $("#file");
+[$("#btnAdjuntar"), $("#btnAdj2")].forEach(b => b.onclick = () => { eligiendo = true; fileIn.click(); setTimeout(() => eligiendo = false, 4000); });
+fileIn.onchange = () => { eligiendo = false; recibir([...fileIn.files]); fileIn.value = ""; };
+let dragN = 0;
+window.addEventListener("dragenter", e => { e.preventDefault(); dragN++; arrastrando = true; isla.classList.remove("notify"); isla.classList.add("open","dragging"); });
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("dragleave", () => { dragN = Math.max(0, dragN-1); if (!dragN) { isla.classList.remove("dragging"); arrastrando = false; } });
+window.addEventListener("drop", e => { e.preventDefault(); dragN = 0; arrastrando = false; isla.classList.remove("dragging"); if (e.dataTransfer.files.length) recibir([...e.dataTransfer.files]); });
+document.addEventListener("paste", e => { const f = [...(e.clipboardData?.files || [])]; if (f.length) { e.preventDefault(); recibir(f); } });
+const leerB64 = f => new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = mal; r.readAsDataURL(f); });
+async function recibir(files){
+  abrir("chat");
+  for (const f of files.slice(0, 5)) {
+    const a = { nombre: f.name || "archivo", texto: "", img: null, tipo: f.type };
+    try {
+      if (/^image\/(png|jpe?g|gif|webp)$/.test(f.type)) a.img = await leerB64(f);
+      else if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) { estado("ocupado", "Leyendo el PDF", f.name); a.texto = await leerPDF(f); }
+      else if (f.size < 3e6) a.texto = await f.text();
+    } catch {}
+    adjuntos.push(a);
+  }
+  estado("listo", "Acá andamos", files.length + (files.length === 1 ? " archivo listo" : " archivos listos"));
+  $("#adjuntos").innerHTML = adjuntos.map((a, i) => `<span class="chip"><span>${a.img ? "🖼" : "📄"} ${esc(a.nombre)}</span><button data-i="${i}">×</button></span>`).join("");
+  if (!txt.value) txt.value = files.length === 1 ? "Resumime este archivo" : "Resumime estos archivos";
+}
+$("#adjuntos").onclick = e => { if (e.target.dataset.i) { adjuntos.splice(+e.target.dataset.i, 1); e.target.parentElement.remove(); } };
+async function leerPDF(f){
+  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise; let out = "";
+  for (let p = 1; p <= Math.min(doc.numPages, 40) && out.length < 50000; p++) { const c = await (await doc.getPage(p)).getTextContent(); out += "\n[pág. " + p + "] " + c.items.map(i => i.str).join(" "); }
+  return out.trim();
+}
+
+/* ---------- ojos ---------- */
+async function captura(max, comparar){
+  estado("mira", "Mirando tu pantalla", "Sacando una captura…");
+  const c = await api.pantalla({ max, comparar });
+  if (!c || c.error) throw new Error(c?.error || "No pude mirar la pantalla.");
+  return c;
+}
+const bloqueImagen = c => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: c.jpeg } });
+const textoVentanas = c => c.ventanas?.length ? "Ventanas abiertas: " + c.ventanas.join(" | ") : (c.app ? "App en primer plano: " + c.app : "");
+
+/* ---------- cerebro con Claude ---------- */
+function pintarCerebro(){ $("#brain").innerHTML = "Cerebro: <b>" + (claves.claude || sample ? "Claude" : "local") + "</b>"; }
+const TOOLS = [
+  { name: "buscar_conocimiento", description: "Busca en la base de conocimiento de AG1 (clases de Ética e IA, instructivos 01 a 42, DIA, obra literaria, El Colorado, Villafañe y Formosa, enlaces). Devuelve los fragmentos más relevantes. Usala antes de decir que algo no está.", input_schema: { type: "object", properties: { consulta: { type: "string" } }, required: ["consulta"] } },
+  { name: "crear_tarea", description: "Suma una tarea pendiente. La app pide permiso.", input_schema: { type: "object", properties: { texto: { type: "string" } }, required: ["texto"] } },
+  { name: "completar_tarea", description: "Marca como hecha una tarea por id.", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  { name: "borrar_tarea", description: "Borra una tarea por id. Solo si lo piden.", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  { name: "guardar_nota", description: "Guarda una nota de texto (ideas, consignas, prompts, resúmenes).", input_schema: { type: "object", properties: { texto: { type: "string" } }, required: ["texto"] } },
+  { name: "borrar_nota", description: "Borra una nota por id. Solo si lo piden.", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  { name: "crear_recordatorio", description: "Programa un aviso con sonido y notificación dentro de N minutos. Si piden una hora concreta, calculá los minutos desde la hora actual.", input_schema: { type: "object", properties: { texto: { type: "string" }, minutos: { type: "number" } }, required: ["texto","minutos"] } },
+  { name: "borrar_recordatorio", description: "Cancela un recordatorio por id.", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  { name: "ver_pantalla", description: "Saca una captura de la pantalla (y en la compu, los títulos de las ventanas). Usala cuando la pregunta depende de lo que la persona está haciendo y no te mandaron captura.", input_schema: { type: "object", properties: {} } }
+];
+function sistema(consulta){
+  const rel = buscar(consulta, 5);
+  const dinamico = `Fecha y hora: ${new Date().toLocaleString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}. Dispositivo: ${PLAT === "android" ? "celular Android" : "computadora"}.
+Tareas: ${JSON.stringify(S.tareas.slice(0,30).map(t => ({ id: t.id, texto: t.texto, hecha: t.hecha })))}
+Notas: ${JSON.stringify(S.notas.slice(0,20).map(n => ({ id: n.id, texto: n.texto.slice(0,200) })))}
+Recordatorios: ${JSON.stringify(S.recs.filter(r => !r.sonado).map(r => ({ id: r.id, texto: r.texto, hora: hora(r.cuando) })))}
+BASE DE CONOCIMIENTO — fragmentos relevantes para este mensaje (si no alcanzan, usá buscar_conocimiento):
+${rel.length ? rel.map(fragTexto).join("\n\n---\n\n") : "(ninguno coincide; buscá si la pregunta toca el material de Ariel)"}`;
+  return [{ type: "text", text: P.prompt, cache_control: { type: "ephemeral" } }, { type: "text", text: dinamico }];
+}
+const ERRORES = { sin_clave: "Me falta la clave de Claude: cargala en Ajustes.", sin_conexion: "No hay conexión. Sigo con lo que tengo guardado." };
+function mensajeError(r){ if (ERRORES[r.error]) return ERRORES[r.error]; if (r.status === 401) return "La clave de Claude no es válida. Revisala en Ajustes."; if (r.status === 429) return "Estoy saturado, probá en un ratito."; if (r.status === 529 || r.status >= 500) return "Claude está ocupado, probá de nuevo."; return "Error de Claude: " + r.error; }
+
+async function conClaude(texto, adj, cap){
+  const bloques = [];
+  if (cap) { bloques.push(bloqueImagen(cap)); const tv = textoVentanas(cap); if (tv) bloques.push({ type: "text", text: tv }); }
+  adj.filter(a => a.img).slice(0, 4).forEach(a => bloques.push({ type: "image", source: { type: "base64", media_type: a.tipo === "image/jpg" ? "image/jpeg" : a.tipo, data: a.img } }));
+  let t = texto || "Mirá esto.";
+  adj.filter(a => !a.img).forEach(a => { t += `\n\n<archivo nombre="${a.nombre}">\n${a.texto ? a.texto.slice(0, 40000) : "(no pude leer este archivo)"}\n</archivo>`; });
+  bloques.push({ type: "text", text: t });
+  const hist = S.chat.slice(-13, -1).filter(c => c.t).map(c => ({ role: c.r === "yo" ? "user" : "assistant", content: c.t }));
+  while (hist.length && hist[0].role !== "user") hist.shift();
+  const mensajes = []; hist.forEach(m => { const u = mensajes[mensajes.length-1]; if (u && u.role === m.role) u.content += "\n" + m.content; else mensajes.push({ ...m }); });
+  if (mensajes.length && mensajes[mensajes.length-1].role === "user") mensajes.push({ role: "assistant", content: "(sigo)" });
+  mensajes.push({ role: "user", content: bloques });
+  const sys = sistema(texto + " " + S.chat.slice(-3).map(c => c.t).join(" "));
+  const el = burbuja("ag", "…"); let salida = "";
+  for (let vuelta = 0; vuelta < 6; vuelta++) {
+    estado("ocupado", "Pensando", "Pensando…");
+    const r = await api.claude({ model: S.rapido ? S.modeloR : S.modelo, max_tokens: 1500, system: sys, tools: TOOLS, messages: mensajes });
+    if (!r || r.error) { if (r?.error === "sin_conexion") { el.remove(); return null; } salida += (salida ? "\n" : "") + mensajeError(r || { error: "sin respuesta" }); break; }
+    mensajes.push({ role: "assistant", content: r.content });
+    const textos = r.content.filter(b => b.type === "text").map(b => b.text.trim()).filter(Boolean);
+    if (textos.length) { salida += (salida ? "\n\n" : "") + textos.join("\n"); el.lastChild.textContent = salida; scrollChat(); }
+    if (r.stop_reason !== "tool_use") break;
+    const resultados = [];
+    for (const b of r.content.filter(b => b.type === "tool_use")) {
+      try {
+        if (b.name === "buscar_conocimiento") estado("ocupado", "Buscando en tu material", String(b.input?.consulta || ""));
+        const out = await acciones[b.name](b.input || {});
+        if (b.name === "ver_pantalla") resultados.push({ type: "tool_result", tool_use_id: b.id, content: [bloqueImagen(out), { type: "text", text: textoVentanas(out) || "Captura lista." }] });
+        else resultados.push({ type: "tool_result", tool_use_id: b.id, content: typeof out === "string" ? out : JSON.stringify(out) });
+      } catch (e) { resultados.push({ type: "tool_result", tool_use_id: b.id, content: "Error: " + e.message, is_error: true }); }
+    }
+    mensajes.push({ role: "user", content: resultados });
+  }
+  salida = salida || "Listo.";
+  el.lastChild.textContent = salida; guardarResp(salida); scrollChat();
+  return salida;
+}
+
+/* vista previa en claude.ai: Claude sin clave, con las mismas herramientas (salvo mirar la pantalla) */
+async function conSample(texto, adj){
+  const sys = sistema(texto + " " + S.chat.slice(-3).map(c => c.t).join(" ")).map(b => b.text).join("\n\n");
+  let t = texto || "Mirá esto.";
+  adj.filter(a => !a.img).forEach(a => { t += `\n\n<archivo nombre="${a.nombre}">\n${a.texto ? a.texto.slice(0, 30000) : "(no pude leer este archivo)"}\n</archivo>`; });
+  if (adj.some(a => a.img)) t += "\n\n(La persona adjuntó imágenes que en esta vista previa no puedo ver.)";
+  const turnos = [{ role: "user", content: sys + "\n\nEsta es una vista previa en el navegador: acá no podés mirar la pantalla ni flotar sobre otras apps; eso lo hace la app instalada." }];
+  const hist = S.chat.slice(-11, -1).filter(c => c.t).map(c => ({ role: c.r === "yo" ? "user" : "assistant", content: c.t }));
+  hist.forEach(m => turnos.push(m));
+  turnos.push({ role: "user", content: t });
+  const tools = TOOLS.filter(x => x.name !== "ver_pantalla").map(x => ({ name: x.name, description: x.description, inputSchema: x.input_schema, execute: async inp => { if (x.name === "buscar_conocimiento") estado("ocupado", "Buscando en tu material", String(inp?.consulta || "")); return await acciones[x.name](inp || {}); } }));
+  const el = burbuja("ag", "…");
+  estado("ocupado", "Pensando", "Pensando…");
+  try {
+    const opts = { modelTier: S.rapido ? "quick" : "default", onText: ({ text }) => { el.lastChild.textContent = text; scrollChat(); } };
+    const lim = await sample.limits().catch(() => null);
+    if (lim?.tools) opts.tools = tools; else opts.cache = false;
+    const { text } = await sample(turnos, opts);
+    el.lastChild.textContent = text.trim(); guardarResp(text.trim()); return text.trim();
+  } catch (e) {
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled"].includes(e?.code)) { sample = null; pintarCerebro(); el.remove(); return null; }
+    const m = (e?.text ? e.text + "\n" : "") + (e?.code === "rate_limited" ? "Estoy saturado, probá en un ratito." : "Se cortó la conexión, probá de nuevo.");
+    el.lastChild.textContent = m; guardarResp(m); return m;
+  }
+}
+
+async function enviar(){
+  if (trabajando) return;
+  callar();
+  const texto = txt.value.trim(); if (!texto && !adjuntos.length) return;
+  const adj = adjuntos; adjuntos = []; $("#adjuntos").innerHTML = ""; txt.value = ""; autoAlto();
+  const usarPantalla = conPantalla; conPantalla = false; pintarConPantalla();
+  agregarMsg("yo", (usarPantalla ? "👁 " : "") + (texto || "(archivo)"), adj.map(a => a.nombre));
+  trabajando = true; let resp = null;
+  try {
+    let cap = null;
+    if (usarPantalla) { try { cap = await captura(1400); } catch (e) { agregarMsg("ag", "No pude mirar la pantalla: " + e.message); } }
+    if (claves.claude) resp = await conClaude(texto, adj, cap);
+    else if (sample) resp = await conSample(texto, adj);
+    if (resp === null) resp = await local(texto, adj, cap);
+  } catch (e) { agregarMsg("ag", "Uy, algo falló: " + e.message); }
+  trabajando = false;
+  if (resp) { estado("listo", "Acá andamos", resp.slice(0, 110)); if (!isla.classList.contains("open")) avisar("AG1 respondió", resp.slice(0, 90)); else bip(); animo("happy"); setTimeout(() => { if (estadoActual === "listo") animo(null); }, 1400); decir(resp); }
+  else estado("listo", "Acá andamos", "Listo");
+}
+
+/* ---------- cerebro local: AG1 sin clave ni conexión ---------- */
+async function local(texto, adj, cap){
+  const el = burbuja("ag", "…"); await new Promise(r => setTimeout(r, 300));
+  let r; try { r = await entender(texto, adj, cap); } catch (e) { r = /deneg/.test(e.message) ? "Dale, no lo hago. 🤝" : "Uy: " + e.message; }
+  el.lastChild.textContent = r; guardarResp(r); return r;
+}
+const cap1 = x => { x = String(x).trim().replace(/[.\s]+$/, ""); return x.charAt(0).toUpperCase() + x.slice(1); };
+async function entender(t, adj, cap){
+  const s = norm(t).trim();
+  if (cap || /que estoy haciendo|que tengo abierto|ventanas abiertas/.test(s)) {
+    const c = cap || await captura(800); const v = c.ventanas || [];
+    return (v.length ? "Mirá, tenés abierto:\n" + v.slice(0, 10).map(x => "- " + x).join("\n") : c.app ? "Estás en: " + c.app : "Saqué la captura, pero no veo nombres de ventanas.") + "\n\nPara entender la imagen de tu pantalla necesito la clave de Claude (Ajustes).";
+  }
+  if (adj.length) return adj.map(a => a.img ? `«${a.nombre}»: es una imagen; sin Claude no la puedo describir.` : !a.texto ? `«${a.nombre}»: no pude leerlo.` : `«${a.nombre}»: ${a.texto.trim().split(/\s+/).length} palabras. Arranca así: ${(a.texto.replace(/\s+/g, " ").match(/[^.!?]+[.!?]/g) || [a.texto.slice(0, 200)]).slice(0, 2).join(" ").slice(0, 260).trim()}`).join("\n\n");
+  let m;
+  if ((m = s.match(/recorda(?:me|rme)?\s+(?:que\s+)?(.+?)\s+en\s+(\d+(?:[.,]\d+)?)\s*(seg|segundos?|min|minutos?|m|h|horas?|hs)\b/))) {
+    const n = parseFloat(m[2].replace(",", ".")), u = m[3][0], min = u === "h" ? n*60 : u === "s" ? n/60 : n;
+    const o = t.match(/record[aá](?:me|rme)?\s+(?:que\s+)?(.+?)\s+en\s+\d/i);
+    const out = await acciones.crear_recordatorio({ texto: cap1(o ? o[1] : m[1]), minutos: min }); return `Dale que va: te aviso a las ${out.suena}. ⏰`;
+  }
+  if ((m = t.match(/^\s*(?:anot[aá]|guard[aá]|nota)\s*:?\s*(?:que\s+)?(.+)/i))) { await acciones.guardar_nota({ texto: cap1(m[1]) }); return "Anotado, profe. ✍️"; }
+  if ((m = t.match(/^\s*(?:tarea|agreg[aá]\s+(?:la\s+)?tarea|sum[aá]\s+(?:la\s+)?tarea)\s*:?\s*(.+)/i))) { await acciones.crear_tarea({ texto: cap1(m[1]) }); return "Sumada a tus tareas. 🎯"; }
+  if (/pendiente|mis tareas|ver tareas/.test(s)) { const p = S.tareas.filter(x => !x.hecha), rr = S.recs.filter(x => !x.sonado); if (!p.length && !rr.length) return "No tenés nada pendiente. ¡A disfrutar! ✨"; return (p.length ? "Tareas:\n" + p.map(x => "- " + x.texto).join("\n") : "Sin tareas.") + (rr.length ? "\n\nRecordatorios:\n" + rr.map(x => "- " + x.texto + " (" + hora(x.cuando) + ")").join("\n") : ""); }
+  if (/que hora/.test(s)) return "Son las " + hora(Date.now()) + ".";
+  if (/que dia|que fecha/.test(s)) return "Hoy es " + new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + ".";
+  const ex = s.replace(/^(calcula|cuanto es|cuanto da)\s*/, "").replace(/\?/g, "").replace(/x/g, "*").replace(/,/g, ".").replace(/\s/g, "");
+  if (/^[\d+\-*/().%^]+$/.test(ex) && /\d/.test(ex) && /[+\-*/%^]/.test(ex)) { try { const v = Function('"use strict";return (' + ex.replace(/\^/g, "**").replace(/(\d+(?:\.\d+)?)%/g, "($1/100)") + ")")(); if (isFinite(v)) return "Da " + (+v.toFixed(6)).toLocaleString("es-AR") + "."; } catch {} }
+  if (/^(hola|buenas|buen dia|che|ag1)\b/.test(s) && s.length < 25) return "¡Buenas, profe! ¿Cómo andás? 🤝 ¿Preparamos una clase, empujamos un proyecto o pensamos una ruta?";
+  if (/gracias/.test(s) && s.length < 30) return "¡De nada! Acá arriba estoy. 🤝";
+  if (/que (podes|sabes) hacer|quien sos|como te ves/.test(s)) return "Soy AG1, tu compañero de ruta, con cuerpo de mascota de IA El Colorado: las letras IA con un sol formoseño de cabeza. 🌞\nTengo tres sombreros: asistente de clases 📚, compañero de proyectos 🛠️ y compañero de viajes 🧭. Además floto arriba de la pantalla, te anoto cosas, te recuerdo y miro tu pantalla si me das permiso.";
+  const r = buscar(t, 3);
+  if (r.length) {
+    const f = r[0], frases = f.texto.replace(/\s+/g, " ").match(/[^.!?]+[.!?]+/g) || [f.texto];
+    let cuerpo = ""; for (const fr of frases) { if ((cuerpo + fr).length > 700) break; cuerpo += fr; }
+    const otros = r.slice(1).map(x => "«" + x.titulo + "»").join(" y ");
+    return `Mirá, en tu material (${f.doc} › ${f.titulo}) dice:\n\n${cuerpo.trim() || f.texto.slice(0, 700)}${otros ? "\n\nTambién tiene que ver con " + otros + "." : ""}\n\n(Ahora respondo con lo que tengo guardado; con la clave de Claude te lo armo a medida.)`;
+  }
+  return "Eso no lo tengo en lo que guardé, profe, y sin la clave de Claude no te quiero inventar nada. Probá preguntarme por un instructivo, una clase de Ética, DIA, tu obra o El Colorado. O cargá la clave en Ajustes y lo pensamos juntos. 🤝";
+}
+
+/* ---------- modo observador ---------- */
+let tObs = null, observando = false;
+function ponerObservador(si){
+  if (si && !claves.claude) { abrir("ajustes"); estado("listo", "Falta la clave", "El observador necesita la clave de Claude para entender tu pantalla."); si = false; }
+  S.observar = !!si; save(); isla.classList.toggle("observando", S.observar); api.observando(S.observar);
+  $("#wObsTxt").textContent = S.observar ? "mirando cada " + fmtMin(S.cada/60) : "apagado";
+  clearInterval(tObs); if (S.observar) { tObs = setInterval(observar, S.cada * 1000); setTimeout(observar, 4000); }
+  $("#optObs").checked = S.observar;
+}
+async function observar(){
+  if (!S.observar || observando || trabajando || permPend || isla.classList.contains("open")) return;
+  observando = true;
+  try {
+    const c = await api.pantalla({ max: 1100, comparar: true, silencioso: true });
+    if (!c || c.error || c.cambio < 0.06) return;
+    const previos = S.consejos.slice(-4).join(" | ") || "ninguno";
+    const r = await api.claude({ model: S.modeloR, max_tokens: 160,
+      system: `Sos AG1, el compañero de ruta de Ariel Cóceres (profe de Ética e IA en El Colorado, Formosa), que mira de reojo su pantalla para darle una mano. Rioplatense, voseo, cálido y breve. Ignorá la isla de arriba (sos vos). Respondé SOLO con un consejo o dato útil de máximo 22 palabras si ves algo concreto en lo que ayudar: un error en pantalla, un formulario, algo repetitivo, una clase o material que se puede mejorar. Si no hay nada valioso, respondé exactamente: NADA. No repitas consejos ya dados: ${previos}`,
+      messages: [{ role: "user", content: [bloqueImagen(c), { type: "text", text: textoVentanas(c) || "Pantalla actual." }] }] });
+    if (!r || r.error) return;
+    const t = (r.content || []).filter(b => b.type === "text").map(b => b.text).join(" ").trim();
+    if (!t || /^NADA\b/i.test(t)) return;
+    S.consejos.push(t); S.consejos = S.consejos.slice(-10);
+    S.chat.push({ r: "obs", t: "👁 " + t, a: [] }); S.chat = S.chat.slice(-40); save(); burbuja("obs", "👁 " + t);
+    avisar("👁 AG1 vio algo", t, "obs");
+  } catch {} finally { observando = false; if (estadoActual === "mira") estado("listo", "Acá andamos"); }
+}
+$("#wObs").onclick = () => ponerObservador(!S.observar);
+
+/* ---------- ajustes ---------- */
+async function pintarAjustes(){
+  $("#optPos").value = S.pos; $("#optObs").checked = S.observar; $("#optCada").value = String(S.cada); $("#optHablar").checked = S.hablar;
+  $("#optRapido").checked = S.rapido; $("#optSonido").checked = S.sonido; $("#optModelo").value = S.modelo; $("#optModeloR").value = S.modeloR;
+  const ini = await api.inicioEstado(); if (ini !== null) $("#optInicio").checked = ini;
+  $("#claveOk").innerHTML = claves.claude ? '<span class="ok">✓ guardada</span>' : "";
+  $("#claveVozOk").innerHTML = claves.eleven ? '<span class="ok">✓ guardada</span>' : "";
+  $("#listaPerm").innerHTML = S.siempre.map(a => `<span>${esc(ACC[a] || a)}</span>`).join("") || '<small>ninguno</small>';
+}
+async function guardarClave(tipo, el){ const v = el.value; el.value = ""; claves = await api.claveGuardar(tipo, v); pintarCerebro(); pintarAjustes(); }
+$("#optClave").onchange = async e => { await guardarClave("claude", e.target); estado("listo", "Acá andamos", claves.claude ? "¡Listo! Ahora pienso con Claude. 🚀" : "Clave borrada: uso lo que tengo guardado."); };
+$("#optClaveVoz").onchange = async e => { await guardarClave("eleven", e.target); if (claves.eleven) { S.hablar = true; save(); $("#optHablar").checked = true; decir("¡Buenas, profe! Ahora hablo con mi voz."); } };
+$("#optHablar").onchange = e => { S.hablar = e.target.checked; save(); if (S.hablar) decir("Dale que va, ahora te hablo."); else callar(); };
+$("#optPos").onchange = e => { S.pos = e.target.value; save(); api.posicion(S.pos); };
+$("#optObs").onchange = e => ponerObservador(e.target.checked);
+$("#optCada").onchange = e => { S.cada = +e.target.value; save(); if (S.observar) ponerObservador(true); };
+$("#optRapido").onchange = e => { S.rapido = e.target.checked; save(); };
+$("#optSonido").onchange = e => { S.sonido = e.target.checked; save(); };
+$("#optInicio").onchange = async e => { const r = await api.inicioPoner(e.target.checked); if (r !== null) e.target.checked = r; };
+$("#optModelo").onchange = e => { S.modelo = e.target.value.trim() || "claude-sonnet-5-5"; save(); };
+$("#optModeloR").onchange = e => { S.modeloR = e.target.value.trim() || "claude-haiku-5-5"; save(); };
+$("#borrarPerm").onclick = () => { S.siempre = []; save(); pintarAjustes(); };
+$("#borrarChat").onclick = () => { S.chat = []; S.consejos = []; save(); pintarChat(); };
+
+/* ---------- arranque ---------- */
+(async () => {
+  try { claves = Object.assign(claves, await api.claveEstado()); } catch {}
+  if (PLAT === "web" && window.claude?.use) { window.claude.use("sample").then(sm => { sample = sm; pintarCerebro(); }).catch(() => {}); }
+  pintarCerebro(); pintar(); pintarChat(); ir("inicio"); api.posicion(S.pos);
+  S.recs.forEach(programar);
+  const venc = S.recs.filter(r => !r.sonado && r.cuando <= Date.now());
+  if (venc.length) { venc.forEach(r => r.sonado = true); save(); pintar(); setTimeout(() => avisar("Te perdiste " + venc.length + (venc.length === 1 ? " recordatorio" : " recordatorios"), venc.map(r => r.texto).join(" · ")), 1200); }
+  estado("listo", "Acá andamos", PLAT === "escritorio" ? "Ctrl+Shift+Espacio para charlar" : "Tocame para charlar");
+  if (S.observar) ponerObservador(true);
+  medir();
+})();
+window.__ag1Debug = { buscar, entender };
+})();
+
+</script>
+
