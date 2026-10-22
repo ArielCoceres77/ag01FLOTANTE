@@ -1,0 +1,11 @@
+{
+  "name": "ag1-flotante",
+  "productName": "AG1",
+  "version": "1.0.0",
+  "description": "AG1 flotante: compañero de ruta de IA El Colorado",
+  "main": "main.js",
+  "author": "Ariel Cóceres · Adustiones Libertarias",
+  "license": "CC-BY-SA-4.0",
+  "scripts": { "start": "electron ." },
+  "devDependencies": { "electron": "33.2.1", "@electron/packager": "18.3.6" }
+}

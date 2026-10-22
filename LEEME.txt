@@ -1,0 +1,29 @@
+AG1 FLOTANTE · compañero de ruta de IA El Colorado
+Copyleft · Adustiones Libertarias · El Colorado, Formosa
+
+ANDROID (AG1.apk)
+1. Pasá el AG1.apk al celular y abrilo. Android va a pedir permiso para
+   «instalar apps de origen desconocido»: aceptalo solo para este archivo.
+2. Abrí AG1 y seguí los 3 pasos: mostrarse sobre otras apps, notificaciones
+   y (opcional) micrófono. Tocá «Encender AG1».
+3. Aparece la isla arriba de todo. La primera vez que le pidas que mire la
+   pantalla, Android te pregunta si querés compartirla. Mientras la compartís
+   se ve el ícono de transmisión; lo cortás desde la notificación de AG1.
+
+WINDOWS (AG1-Windows.zip)
+Descomprimí y abrí AG1.exe. Si aparece «Windows protegió su PC»:
+«Más información» → «Ejecutar de todas formas» (no está firmado).
+Atajos: Ctrl+Shift+Espacio abre el chat · Ctrl+Shift+P mira la pantalla.
+
+EL CEREBRO
+· Sin clave: AG1 responde con su material guardado (Ética e IA clases 1 a 8,
+  instructivos 01 a 42, DIA, tu obra, El Colorado, Villafañe y Formosa),
+  anota tareas y notas y programa recordatorios.
+· Con la clave de Claude (console.anthropic.com, se paga según el uso):
+  piensa a medida, entiende tu pantalla y las imágenes, y usa su material.
+· Con la clave de ElevenLabs (opcional): habla con la voz de tu agente AG1.
+Las claves se cargan en Ajustes (el engranaje) y quedan solo en tu equipo.
+
+PARA ACTUALIZAR LO QUE SABE
+Editá los archivos de la carpeta «conocimiento» y volvé a compilar
+(en GitHub: pestaña Actions → «Compilar AG1» → Run workflow).
