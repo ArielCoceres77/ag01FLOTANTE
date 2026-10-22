@@ -178,18 +178,18 @@ class AG1Servicio : Service() {
 
     private fun actualizar() { try { wm.updateViewLayout(web, lp) } catch (_: Exception) {} }
 
-    fun accion(a: String) = main.post { web.evaluateJavascript("window.__ag1Accion && window.__ag1Accion(${JSONObject.quote(a)})", null) }
+    fun accion(a: String): Boolean = main.post { web.evaluateJavascript("window.__ag1Accion && window.__ag1Accion(${JSONObject.quote(a)})", null) }
 
-    private fun responder(id: String, json: String) = main.post {
+    private fun responder(id: String, json: String): Boolean = main.post {
         web.evaluateJavascript("window.__ag1Resp(${JSONObject.quote(id)}, ${JSONObject.quote(json)})", null)
     }
 
-    private fun voz(tipo: String, texto: String) = main.post {
+    private fun voz(tipo: String, texto: String): Boolean = main.post {
         web.evaluateJavascript("window.__ag1Voz && window.__ag1Voz(${JSONObject.quote(tipo)}, ${JSONObject.quote(texto)})", null)
     }
 
     /* ---------------- oído ---------------- */
-    fun empezarAEscuchar() = main.post {
+    fun empezarAEscuchar(): Boolean = main.post {
         if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             PermisoMicActivity.alTerminar = { ok -> if (ok) empezarAEscuchar() else voz("error", "") }
             startActivity(Intent(this, PermisoMicActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -225,7 +225,7 @@ class AG1Servicio : Service() {
             .put("eleven", !prefs.getString("clave_eleven", "").isNullOrEmpty()).toString()
 
         @JavascriptInterface
-        fun tamano(w: Double, h: Double) = main.post {
+        fun tamano(w: Double, h: Double): Boolean = main.post {
             val ancho = resources.displayMetrics.widthPixels
             lp.width = if (w >= 9000) ancho else minOf(ancho, ((w + 12) * densidad).toInt())
             lp.height = minOf((resources.displayMetrics.heightPixels * 0.88).toInt(), ((h + 12) * densidad).toInt())
@@ -233,13 +233,13 @@ class AG1Servicio : Service() {
         }
 
         @JavascriptInterface
-        fun posicion(p: String) = main.post {
+        fun posicion(p: String): Boolean = main.post {
             lp.gravity = Gravity.TOP or when (p) { "izquierda" -> Gravity.START; "derecha" -> Gravity.END; else -> Gravity.CENTER_HORIZONTAL }
             actualizar()
         }
 
         @JavascriptInterface
-        fun foco(si: Boolean) = main.post {
+        fun foco(si: Boolean): Boolean = main.post {
             lp.flags = if (si) lp.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
             else lp.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
             actualizar()
@@ -264,7 +264,7 @@ class AG1Servicio : Service() {
         fun callar() { tts?.stop() }
 
         @JavascriptInterface
-        fun escuchar() = empezarAEscuchar()
+        fun escuchar() { empezarAEscuchar() }
 
         @JavascriptInterface
         fun pedir(id: String, metodo: String, args: String) {
